@@ -1,33 +1,18 @@
-export type Grupo = "Colaboradores" | "Robótica";
+export type Grupo = string;
 export interface Pessoa {
-  nif: string;
+  id: string;
   nome: string;
+  nif: string | null;
   grupo: Grupo;
 }
 
-const colab = [
-  "Ana Paula Souza", "Bruno Henrique Lima", "Carla Mendes", "Daniel Ferreira", "Eduarda Rocha",
-  "Fábio Martins", "Gabriela Nunes", "Helena Carvalho", "Igor Santos", "Juliana Alves",
-  "Leonardo Costa", "Marina Oliveira", "Natália Ribeiro", "Otávio Pereira", "Patrícia Gomes",
-  "Rafael Barbosa", "Sandra Dias", "Thiago Araújo",
-];
-const robo = [
-  "Arthur Moreira", "Beatriz Cardoso", "Caio Teixeira", "Davi Correia", "Elisa Pinto",
-  "Felipe Azevedo", "Giovanna Lopes", "Heitor Freitas", "Isabela Monteiro", "João Pedro Vieira",
-  "Laura Cunha", "Miguel Ramos",
-];
+export const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-export const PESSOAS: Pessoa[] = [
-  ...colab.map((nome, i) => ({ nome, nif: String(1040210 + i * 37), grupo: "Colaboradores" as Grupo })),
-  ...robo.map((nome, i) => ({ nome, nif: String(2085300 + i * 41), grupo: "Robótica" as Grupo })),
-];
-
-const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-export function buscarPessoas(q: string, limit = 6): Pessoa[] {
+/** Filtra a lista de pessoas (já carregada do banco) por nome ou NIF, ignorando acentos. */
+export function buscarPessoas(pessoas: Pessoa[], q: string, limit = 6): Pessoa[] {
   const t = norm(q.trim());
   if (!t) return [];
-  return PESSOAS.filter((p) => norm(p.nome).includes(t) || p.nif.includes(t)).slice(0, limit);
+  return pessoas.filter((p) => norm(p.nome).includes(t) || (p.nif ?? "").includes(t)).slice(0, limit);
 }
 
 /** Monday of the current week; on Sat/Sun returns next week's Monday. */
@@ -45,4 +30,57 @@ export function diasDaSemana(seg: Date): Date[] {
     d.setDate(seg.getDate() + i);
     return d;
   });
+}
+
+/** Data local no formato AAAA-MM-DD (o formato das colunas `date` do banco). */
+export function isoData(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+const FUSO = "America/Sao_Paulo";
+
+/** Data e hora de agora no fuso de São Paulo (o mesmo usado pelo banco para o prazo). */
+export function agoraSP(agora = new Date()): { data: string; hora: string } {
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: FUSO,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(agora)
+      .map((p) => [p.type, p.value]),
+  );
+  return {
+    data: `${partes.year}-${partes.month}-${partes.day}`,
+    hora: `${partes.hour}:${partes.minute}:${partes.second}`,
+  };
+}
+
+export interface RegrasDePrazo {
+  prazo_limite: string;
+  dias_bloqueados: string[];
+}
+
+/**
+ * Por que o dia não aceita marcação do público (ou `null` se aceita).
+ * É só para a interface desabilitar o dia: quem decide de verdade é o banco.
+ */
+export function motivoFechado(
+  dataISO: string,
+  regras: RegrasDePrazo | undefined,
+  agora = new Date(),
+): "sem-almoco" | "encerrado" | null {
+  if (!regras) return null;
+  if (regras.dias_bloqueados.includes(dataISO)) return "sem-almoco";
+  const { data: hoje, hora } = agoraSP(agora);
+  if (dataISO < hoje) return "encerrado";
+  if (dataISO === hoje && hora > regras.prazo_limite) return "encerrado";
+  return null;
 }

@@ -1,28 +1,22 @@
-import { PESSOAS, type Pessoa } from "./almoco-data";
+import type { Pessoa } from "./almoco-data";
 
 export type Status = "vai" | "nao" | "sem";
 export interface Linha extends Pessoa {
   status: Status;
 }
 
-function hash(s: string) {
-  let h = 0;
-  for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0;
-  return Math.abs(h);
-}
+/** Chave de uma marcação no mapa devolvido pelo banco: "pessoaId|AAAA-MM-DD" → vai almoçar? */
+export const chaveMarcacao = (pessoaId: string, data: string) => `${pessoaId}|${data}`;
 
-/** Lunch list for a weekday (0–4). Uses real local marks when present, otherwise deterministic fake data. */
-export function listaDoDia(semanaKey: string, dia: number, ler?: (k: string) => string | null): Linha[] {
-  return PESSOAS.map((p) => {
-    const salvo = ler?.(`almoco:${semanaKey}:${p.nif}`);
-    let status: Status;
-    if (salvo) status = (JSON.parse(salvo) as boolean[])[dia] ? "vai" : "nao";
-    else {
-      const h = hash(p.nif + semanaKey);
-      status = h % 7 === 0 ? "sem" : hash(p.nif + dia) % 4 === 0 ? "nao" : "vai";
-    }
-    return { ...p, status };
-  }).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+/** Lista de almoço de um dia: só o que está no banco. Sem registro = "sem marcação". */
+export function listaDoDia(pessoas: Pessoa[], marcas: Map<string, boolean>, data: string): Linha[] {
+  return pessoas
+    .map((p) => {
+      const vai = marcas.get(chaveMarcacao(p.id, data));
+      const status: Status = vai === undefined ? "sem" : vai ? "vai" : "nao";
+      return { ...p, status };
+    })
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 }
 
 export function totais(l: Linha[]) {
