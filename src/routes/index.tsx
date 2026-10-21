@@ -288,16 +288,24 @@ function Index() {
                       className={cn(
                         "group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-3xl border p-4 text-left transition-all duration-300 animate-rise active:scale-[.97] lg:min-h-48 lg:flex-col lg:items-stretch lg:justify-between",
                         on ? "border-transparent bg-on text-primary-foreground shadow-glow" : "bg-card hover:border-primary/40",
-                        fechado && "pointer-events-none opacity-60",
+                        fechado && "pointer-events-none",
                       )}
                     >
                       <span className={cn("pointer-events-none absolute -right-6 -top-6 text-7xl font-black transition-opacity duration-300", on ? "opacity-15" : "opacity-[.04]")}>
                         {d.getDate()}
                       </span>
-                      <div className="relative flex-1">
+                      {/* (a animação do card sobrescreve a opacity dele, por isso o esmaecimento vai nos filhos) */}
+                      <div className={cn("relative flex-1", fechado && "opacity-60")}>
                         <p className="text-lg font-bold">{NOMES_DIA[i]}</p>
                         <p className={cn("text-sm", on ? "opacity-80" : "text-muted-foreground")}>
-                          {fechado === "sem-almoco" ? "Sem almoço neste dia" : <>{on ? "Vou almoçar 🍽️" : "Não vou"}{fechado && " · encerrado"}</>}
+                          {fechado === "sem-almoco" ? (
+                            "Sem almoço neste dia"
+                          ) : (
+                            <>
+                              {on ? "Vou almoçar 🍽️" : "Não vou"}
+                              {fechado && <span className="block text-xs">Encerrado</span>}
+                            </>
+                          )}
                         </p>
                       </div>
                       {/* Toggle */}
@@ -305,6 +313,7 @@ function Index() {
                         className={cn(
                           "relative flex h-12 w-24 shrink-0 items-center rounded-full p-1 transition-colors duration-300",
                           on ? "bg-primary-foreground/25" : "bg-muted",
+                          fechado && "opacity-60",
                         )}
                       >
                         <span
