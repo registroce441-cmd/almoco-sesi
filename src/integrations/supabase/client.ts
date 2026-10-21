@@ -14,6 +14,7 @@ export function getSupabase(): SupabaseClient<Database> {
   if (!url || !anonKey) {
     throw new Error("SUPABASE_NAO_CONFIGURADO");
   }
-  client ??= createClient<Database>(url, anonKey);
+  // retry: false -> quem refaz a consulta é o React Query (1 tentativa extra), assim o aviso de erro aparece em poucos segundos.
+  client ??= createClient<Database>(url, anonKey, { db: { retry: false } });
   return client;
 }
