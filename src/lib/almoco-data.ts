@@ -58,8 +58,8 @@ export function agoraSP(agora = new Date()): { data: string; hora: string } {
       .map((p) => [p.type, p.value]),
   );
   return {
-    data: `${partes.year}-${partes.month}-${partes.day}`,
-    hora: `${partes.hour}:${partes.minute}:${partes.second}`,
+    data: `${partes["year"]}-${partes["month"]}-${partes["day"]}`,
+    hora: `${partes["hour"]}:${partes["minute"]}:${partes["second"]}`,
   };
 }
 

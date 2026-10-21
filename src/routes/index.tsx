@@ -2,7 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTema } from "@/lib/theme";
 import { Moon, Sun, Search, X, Check, CalendarCheck, Eraser, ArrowLeft, Sparkles, UtensilsCrossed, ChevronRight } from "lucide-react";
-import { buscarPessoas, diasDaSemana, segundaDaSemana, type Pessoa } from "@/lib/almoco-data";
+import { buscarPessoas, diasDaSemana, isoData, motivoFechado, segundaDaSemana, type Pessoa } from "@/lib/almoco-data";
+import { usePessoas } from "@/hooks/use-pessoas";
+import { useConfiguracoes } from "@/hooks/use-configuracoes";
+import { useMarcacoesDaPessoa, useSalvarMarcacoes } from "@/hooks/use-marcacoes";
+import { mensagemDeErro } from "@/lib/erros";
+import { EstadoErro } from "@/components/EstadoErro";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -35,6 +41,8 @@ function Index() {
   const [focused, setFocused] = useState(false);
   const [pessoa, setPessoa] = useState<Pessoa | null>(null);
   const [marcas, setMarcas] = useState<boolean[]>(VAZIO);
+  const [editado, setEditado] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
   const [hoje, setHoje] = useState<Date | null>(null);
   const [ola, setOla] = useState("Olá");
@@ -42,28 +50,60 @@ function Index() {
 
   const seg = useMemo(() => segundaDaSemana(), []);
   const dias = useMemo(() => diasDaSemana(seg), [seg]);
-  const semanaKey = seg.toISOString().slice(0, 10);
-  const sugestoes = useMemo(() => buscarPessoas(query), [query]);
+  const pessoas = usePessoas();
+  const config = useConfiguracoes();
+  const salvas = useMarcacoesDaPessoa(pessoa?.id, seg);
+  const salvar = useSalvarMarcacoes();
+  const sugestoes = useMemo(() => buscarPessoas(pessoas.data ?? [], query), [pessoas.data, query]);
   const total = marcas.filter(Boolean).length;
+  // Dias que o público não pode mais alterar (prazo encerrado ou sem almoço). O banco também valida.
+  const fechados = dias.map((d) => motivoFechado(isoData(d), config.data));
+  const carregandoMarcas = Boolean(pessoa) && salvas.isLoading;
+  const erroDeSalvar = aviso ?? (salvar.isError ? mensagemDeErro(salvar.error) : null);
 
   useEffect(() => {
     setHoje(new Date());
     setOla(saudacao());
   }, []);
 
+  // Preenche com o que já está salvo no banco, até a pessoa mexer em algum dia.
+  useEffect(() => {
+    if (salvas.data && !editado) setMarcas(salvas.data.map((v) => v === true));
+  }, [salvas.data, editado]);
+
+  const alterar = (fn: (m: boolean[]) => boolean[]) => {
+    setEditado(true);
+    setAviso(null);
+    salvar.reset();
+    setMarcas(fn);
+  };
+
   const escolher = (p: Pessoa) => {
     setPessoa(p);
     setQuery("");
     inputRef.current?.blur();
-    const salvo = localStorage.getItem(`almoco:${semanaKey}:${p.nif}`);
-    setMarcas(salvo ? JSON.parse(salvo) : VAZIO);
+    setMarcas(VAZIO);
+    setEditado(false);
+    setAviso(null);
+    salvar.reset();
   };
 
   const confirmar = () => {
     if (!pessoa) return;
-    localStorage.setItem(`almoco:${semanaKey}:${pessoa.nif}`, JSON.stringify(marcas));
-    setSucesso(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const itens = dias.flatMap((d, i) => (fechados[i] ? [] : [{ data: isoData(d), vai: marcas[i] ?? false }]));
+    if (itens.length === 0) {
+      setAviso("Os dias dessa semana já estão encerrados para marcação.");
+      return;
+    }
+    salvar.mutate(
+      { pessoaId: pessoa.id, itens },
+      {
+        onSuccess: () => {
+          setSucesso(true);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        },
+      },
+    );
   };
 
   return (
@@ -155,11 +195,18 @@ function Index() {
             </div>
             {focused && query.trim() && (
               <ul className="mt-2 max-h-80 overflow-y-auto">
-                {sugestoes.length === 0 ? (
+                {pessoas.isLoading ? (
+                  <li className="space-y-2 p-2">
+                    <Skeleton className="h-14 w-full rounded-2xl" />
+                    <Skeleton className="h-14 w-full rounded-2xl" />
+                  </li>
+                ) : pessoas.isError ? (
+                  <li className="px-4 py-5 text-center text-sm text-muted-foreground">{mensagemDeErro(pessoas.error)}</li>
+                ) : sugestoes.length === 0 ? (
                   <li className="px-4 py-5 text-center text-sm text-muted-foreground">Ninguém encontrado 🤔</li>
                 ) : (
                   sugestoes.map((p, idx) => (
-                    <li key={p.nif} className="animate-rise" style={{ animationDelay: `${idx * 35}ms` }}>
+                    <li key={p.id} className="animate-rise" style={{ animationDelay: `${idx * 35}ms` }}>
                       <button
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => escolher(p)}
@@ -168,7 +215,7 @@ function Index() {
                         <Avatar nome={p.nome} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-semibold text-card-foreground">{p.nome}</p>
-                          <p className="text-xs text-muted-foreground">NIF {p.nif} · {p.grupo}</p>
+                          <p className="text-xs text-muted-foreground">{p.nif ? `NIF ${p.nif} · ` : ""}{p.grupo}</p>
                         </div>
                         <ChevronRight className="h-5 w-5 text-muted-foreground transition group-hover:translate-x-0.5" />
                       </button>
@@ -179,7 +226,9 @@ function Index() {
             )}
           </div>
 
-          {!pessoa ? (
+          {!pessoa && pessoas.isError ? (
+            <EstadoErro erro={pessoas.error} onTentar={() => pessoas.refetch()} />
+          ) : !pessoa ? (
             <div className="mt-12 flex flex-col items-center text-center animate-rise [animation-delay:300ms]">
               <div className="relative mb-5">
                 <div className="absolute inset-0 rounded-full bg-primary/30 animate-ring" />
@@ -191,44 +240,55 @@ function Index() {
               <p className="mt-1 max-w-xs text-sm text-muted-foreground">Encontre seu nome e marque os dias em segundos.</p>
             </div>
           ) : (
-            <div key={pessoa.nif}>
+            <div key={pessoa.id}>
               <div className="mt-5 flex items-center gap-3 rounded-3xl border bg-card p-4 animate-rise">
                 <Avatar nome={pessoa.nome} big />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-lg font-bold leading-tight">{pessoa.nome}</p>
-                  <p className="text-sm text-muted-foreground">NIF {pessoa.nif}</p>
+                  <p className="text-sm text-muted-foreground">{pessoa.nif ? `NIF ${pessoa.nif}` : "Sem NIF"}</p>
                 </div>
                 <GrupoTag grupo={pessoa.grupo} />
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-3 animate-rise [animation-delay:60ms]">
                 <button
-                  onClick={() => setMarcas([true, true, true, true, true])}
+                  onClick={() => alterar((m) => m.map((v, i) => (fechados[i] ? v : true)))}
                   className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-secondary px-3 text-sm font-semibold text-secondary-foreground transition hover:bg-secondary/70 active:scale-[.97]"
                 >
                   <CalendarCheck className="h-4 w-4" /> Semana toda
                 </button>
                 <button
-                  onClick={() => setMarcas(VAZIO)}
+                  onClick={() => alterar((m) => m.map((v, i) => (fechados[i] ? v : false)))}
                   className="flex h-12 items-center justify-center gap-2 rounded-2xl border bg-card px-3 text-sm font-semibold transition hover:bg-muted active:scale-[.97]"
                 >
                   <Eraser className="h-4 w-4" /> Limpar
                 </button>
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {salvas.isError && <EstadoErro erro={salvas.error} onTentar={() => salvas.refetch()} />}
+              {carregandoMarcas && (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5" aria-busy="true" aria-label="Carregando suas marcações">
+                  {dias.map((_, i) => (
+                    <Skeleton key={i} className="min-h-24 rounded-3xl lg:min-h-48" />
+                  ))}
+                </div>
+              )}
+              <div className={cn("mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5", (carregandoMarcas || salvas.isError) && "hidden")}>
                 {dias.map((d, i) => {
                   const on = marcas[i];
+                  const fechado = fechados[i];
                   return (
                     <button
                       key={i}
                       role="switch"
                       aria-checked={on}
-                      onClick={() => setMarcas((m) => m.map((v, j) => (j === i ? !v : v)))}
+                      disabled={Boolean(fechado)}
+                      onClick={() => alterar((m) => m.map((v, j) => (j === i ? !v : v)))}
                       style={{ animationDelay: `${100 + i * 60}ms` }}
                       className={cn(
                         "group relative flex min-h-24 items-center gap-4 overflow-hidden rounded-3xl border p-4 text-left transition-all duration-300 animate-rise active:scale-[.97] lg:min-h-48 lg:flex-col lg:items-stretch lg:justify-between",
                         on ? "border-transparent bg-on text-primary-foreground shadow-glow" : "bg-card hover:border-primary/40",
+                        fechado && "pointer-events-none opacity-60",
                       )}
                     >
                       <span className={cn("pointer-events-none absolute -right-6 -top-6 text-7xl font-black transition-opacity duration-300", on ? "opacity-15" : "opacity-[.04]")}>
@@ -237,7 +297,7 @@ function Index() {
                       <div className="relative flex-1">
                         <p className="text-lg font-bold">{NOMES_DIA[i]}</p>
                         <p className={cn("text-sm", on ? "opacity-80" : "text-muted-foreground")}>
-                          {on ? "Vou almoçar 🍽️" : "Não vou"}
+                          {fechado === "sem-almoco" ? "Sem almoço neste dia" : <>{on ? "Vou almoçar 🍽️" : "Não vou"}{fechado && " · encerrado"}</>}
                         </p>
                       </div>
                       {/* Toggle */}
@@ -267,6 +327,11 @@ function Index() {
 
       {pessoa && !sucesso && !focused && (
         <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-3 animate-rise md:bottom-0 md:pb-safe">
+          {erroDeSalvar && (
+            <p role="alert" className="mx-auto mb-2 max-w-3xl rounded-2xl border bg-card px-4 py-3 text-sm font-semibold text-accent shadow-lg">
+              {erroDeSalvar}
+            </p>
+          )}
           <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-3xl border bg-glass p-2.5 pl-3 shadow-2xl backdrop-blur-xl">
             <ProgressRing value={total} />
             <div className="hidden shrink-0 min-[400px]:block">
@@ -275,9 +340,10 @@ function Index() {
             </div>
             <button
               onClick={confirmar}
-              className="shimmer h-14 flex-1 rounded-2xl bg-cta px-4 text-base font-bold text-accent-foreground shadow-glow-accent transition active:scale-[.97]"
+              disabled={salvar.isPending || carregandoMarcas || salvas.isError}
+              className="shimmer h-14 flex-1 rounded-2xl bg-cta px-4 text-base font-bold text-accent-foreground shadow-glow-accent transition active:scale-[.97] disabled:pointer-events-none disabled:opacity-60"
             >
-              Confirmar marcação
+              {salvar.isPending ? "Salvando…" : "Confirmar marcação"}
             </button>
           </div>
         </div>

@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Leaf, Salad, IceCreamCone, Share2, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { diasDaSemana, segundaDaSemana } from "@/lib/almoco-data";
-import { cardapioDaSemana, type Tag } from "@/lib/cardapio-data";
+import { useCardapio } from "@/hooks/use-cardapio";
+import { EstadoErro } from "@/components/EstadoErro";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/cardapio")({
@@ -22,7 +24,8 @@ export const Route = createFileRoute("/cardapio")({
 
 const NOMES = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
 const fmt = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-const TAG_ESTILO: Record<Tag, string> = {
+const TAG_PADRAO = "bg-muted text-muted-foreground";
+const TAG_ESTILO: Record<string, string> = {
   Vegetariano: "bg-success/15 text-success",
   "Sem glúten": "bg-accent/12 text-accent",
   "Sem lactose": "bg-primary/10 text-primary",
@@ -41,7 +44,8 @@ function Cardapio() {
     return s;
   }, [offset]);
   const dias = useMemo(() => diasDaSemana(seg), [seg]);
-  const menu = useMemo(() => cardapioDaSemana(offset), [offset]);
+  const cardapio = useCardapio(seg);
+  const menu = cardapio.data;
   const idxHoje = hoje ? dias.findIndex((d) => d.toDateString() === hoje.toDateString()) : -1;
 
   useEffect(() => setAtivo(idxHoje >= 0 ? idxHoje : 0), [idxHoje, offset]);
@@ -52,7 +56,9 @@ function Cardapio() {
   };
 
   const compartilhar = () => {
-    const linhas = menu.map((m, i) => `*${NOMES[i]} (${fmt(dias[i]!)})*\n🍽️ ${m.prato}\n🥗 ${m.acompanhamento}\n🍮 ${m.sobremesa}`);
+    if (!menu) return;
+    const linhas = menu.flatMap((m, i) => (m ? [`*${NOMES[i]} (${fmt(dias[i]!)})*\n🍽️ ${m.prato}\n🥗 ${m.acompanhamento}\n🍮 ${m.sobremesa}`] : []));
+    if (linhas.length === 0) return;
     const texto = `*Cardápio SESI — ${fmt(dias[0]!)} a ${fmt(dias[4]!)}*\n\n${linhas.join("\n\n")}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank");
   };
@@ -94,8 +100,16 @@ function Cardapio() {
           ))}
         </div>
 
+        {cardapio.isError && <EstadoErro erro={cardapio.error} onTentar={() => cardapio.refetch()} />}
+        {cardapio.isLoading && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5" aria-busy="true" aria-label="Carregando o cardápio">
+            {dias.map((_, i) => (
+              <Skeleton key={i} className="h-64 rounded-3xl" />
+            ))}
+          </div>
+        )}
         <div key={offset} className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          {menu.map((m, i) => {
+          {(menu ?? []).map((m, i) => {
             const isHoje = i === idxHoje;
             return (
               <article
@@ -115,15 +129,23 @@ function Cardapio() {
                   </div>
                   {isHoje && <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-foreground shadow-glow-accent">HOJE</span>}
                 </div>
-                <h3 className="relative mt-4 text-xl font-bold leading-snug lg:text-lg">{m.prato}</h3>
-                <ul className={cn("relative mt-3 space-y-2 text-sm", isHoje ? "opacity-90" : "text-muted-foreground")}>
-                  <li className="flex gap-2"><Salad className="mt-0.5 h-4 w-4 shrink-0" /> {m.acompanhamento}</li>
-                  <li className="flex gap-2"><IceCreamCone className="mt-0.5 h-4 w-4 shrink-0" /> {m.sobremesa}</li>
-                </ul>
-                {m.tags.length > 0 && (
+                {!m ? (
+                  <p className={cn("relative mt-4 text-base font-semibold leading-snug", isHoje ? "opacity-90" : "text-muted-foreground")}>
+                    Cardápio ainda não divulgado
+                  </p>
+                ) : (
+                  <>
+                    <h3 className="relative mt-4 text-xl font-bold leading-snug lg:text-lg">{m.prato}</h3>
+                    <ul className={cn("relative mt-3 space-y-2 text-sm", isHoje ? "opacity-90" : "text-muted-foreground")}>
+                      {m.acompanhamento && <li className="flex gap-2"><Salad className="mt-0.5 h-4 w-4 shrink-0" /> {m.acompanhamento}</li>}
+                      {m.sobremesa && <li className="flex gap-2"><IceCreamCone className="mt-0.5 h-4 w-4 shrink-0" /> {m.sobremesa}</li>}
+                    </ul>
+                  </>
+                )}
+                {m && m.tags.length > 0 && (
                   <div className="relative mt-auto flex flex-wrap gap-1.5 pt-4">
                     {m.tags.map((t) => (
-                      <span key={t} className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold", isHoje ? "bg-primary-foreground/20" : TAG_ESTILO[t])}>
+                      <span key={t} className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold", isHoje ? "bg-primary-foreground/20" : (TAG_ESTILO[t] ?? TAG_PADRAO))}>
                         {t === "Vegetariano" && <Leaf className="h-3 w-3" />} {t}
                       </span>
                     ))}
@@ -136,7 +158,8 @@ function Cardapio() {
 
         <button
           onClick={compartilhar}
-          className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-success font-bold text-success-foreground shadow-lg transition active:scale-[.98] md:mx-auto md:w-auto md:px-8"
+          disabled={!menu?.some(Boolean)}
+          className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-success font-bold text-success-foreground shadow-lg transition active:scale-[.98] disabled:pointer-events-none disabled:opacity-60 md:mx-auto md:w-auto md:px-8"
         >
           <Share2 className="h-5 w-5" /> Compartilhar no WhatsApp
         </button>
