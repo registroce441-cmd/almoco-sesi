@@ -1,49 +1,51 @@
 -- =====================================================================
--- Almoço SESI — dados FICTÍCIOS para testar o app
--- Rode DEPOIS das 3 migrations. Pode rodar de novo sem duplicar nada.
--- Todos os nomes e NIFs abaixo são inventados.
+-- Almoço SESI — dados FICTÍCIOS para testar o app (somente colaboradores)
+-- Rode DEPOIS das migrations. Pode rodar de novo sem duplicar nada.
+-- Todos os nomes e NIFs abaixo são inventados. Há dois pares de homônimos
+-- (Marcos Vinícius Lima e Renata Figueiredo) para testar o desempate pelo NIF.
+-- O código de acesso da cozinha NÃO vem aqui: defina o seu (veja docs/configurar-supabase.md).
 -- =====================================================================
 
--- Grupos
-insert into public.grupos (nome) values ('Colaboradores'), ('Robótica')
+-- Grupo único
+insert into public.grupos (nome) values ('Colaboradores')
 on conflict (nome) do nothing;
 
--- 30 pessoas fictícias (18 colaboradores + 12 alunos da Robótica)
+-- 30 colaboradores fictícios
 insert into public.pessoas (nome, nif, grupo_id)
 select v.nome, v.nif, g.id
 from (values
-    ('Ana Paula Souza', '1040210', 'Colaboradores'),
-    ('Bruno Henrique Lima', '1040247', 'Colaboradores'),
-    ('Carla Mendes', '1040284', 'Colaboradores'),
-    ('Daniel Ferreira', '1040321', 'Colaboradores'),
-    ('Eduarda Rocha', '1040358', 'Colaboradores'),
-    ('Fábio Martins', '1040395', 'Colaboradores'),
-    ('Gabriela Nunes', '1040432', 'Colaboradores'),
-    ('Helena Carvalho', '1040469', 'Colaboradores'),
-    ('Igor Santos', '1040506', 'Colaboradores'),
-    ('Juliana Alves', '1040543', 'Colaboradores'),
-    ('Leonardo Costa', '1040580', 'Colaboradores'),
-    ('Marina Oliveira', '1040617', 'Colaboradores'),
-    ('Natália Ribeiro', '1040654', 'Colaboradores'),
-    ('Otávio Pereira', '1040691', 'Colaboradores'),
-    ('Patrícia Gomes', '1040728', 'Colaboradores'),
-    ('Rafael Barbosa', '1040765', 'Colaboradores'),
-    ('Sandra Dias', '1040802', 'Colaboradores'),
-    ('Thiago Araújo', '1040839', 'Colaboradores'),
-    ('Arthur Moreira', '2085300', 'Robótica'),
-    ('Beatriz Cardoso', '2085341', 'Robótica'),
-    ('Caio Teixeira', '2085382', 'Robótica'),
-    ('Davi Correia', '2085423', 'Robótica'),
-    ('Elisa Pinto', '2085464', 'Robótica'),
-    ('Felipe Azevedo', '2085505', 'Robótica'),
-    ('Giovanna Lopes', '2085546', 'Robótica'),
-    ('Heitor Freitas', '2085587', 'Robótica'),
-    ('Isabela Monteiro', '2085628', 'Robótica'),
-    ('João Pedro Vieira', '2085669', 'Robótica'),
-    ('Laura Cunha', '2085710', 'Robótica'),
-    ('Miguel Ramos', '2085751', 'Robótica')
-) as v (nome, nif, grupo)
-join public.grupos g on g.nome = v.grupo
+    ('Ana Paula Souza', '1040210'),
+    ('Bruno Henrique Lima', '1040247'),
+    ('Carla Mendes', '1040284'),
+    ('Daniel Ferreira', '1040321'),
+    ('Eduarda Rocha', '1040358'),
+    ('Fábio Martins', '1040395'),
+    ('Gabriela Nunes', '1040432'),
+    ('Helena Carvalho', '1040469'),
+    ('Igor Santos', '1040506'),
+    ('Juliana Alves', '1040543'),
+    ('Leonardo Costa', '1040580'),
+    ('Marina Oliveira', '1040617'),
+    ('Natália Ribeiro', '1040654'),
+    ('Otávio Pereira', '1040691'),
+    ('Patrícia Gomes', '1040728'),
+    ('Rafael Barbosa', '1040765'),
+    ('Sandra Dias', '1040802'),
+    ('Thiago Araújo', '1040839'),
+    ('Alessandra Moura', '1041000'),
+    ('Cláudio Batista', '1041029'),
+    ('Débora Siqueira', '1041058'),
+    ('Eduardo Campos', '1041087'),
+    ('Fernanda Lacerda', '1041116'),
+    ('Gustavo Pires', '1041145'),
+    ('Ingrid Valadares', '1041174'),
+    ('José Carlos Nogueira', '1041203'),
+    ('Marcos Vinícius Lima', '1041232'),
+    ('Marcos Vinícius Lima', '1041261'),
+    ('Renata Figueiredo', '1041290'),
+    ('Renata Figueiredo', '1041319')
+) as v (nome, nif)
+cross join (select id from public.grupos where nome = 'Colaboradores') g
 on conflict (nif) do nothing;
 
 -- Cardápio de 4 semanas, a partir da segunda-feira da semana atual
