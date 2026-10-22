@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTema } from "@/lib/theme";
 import { Moon, Sun, Search, X, Check, CalendarCheck, Eraser, ArrowLeft, Sparkles, UtensilsCrossed, ChevronRight } from "lucide-react";
-import { buscarPessoas, diasDaSemana, isoData, motivoFechado, segundaDaSemana, type Pessoa } from "@/lib/almoco-data";
-import { usePessoas } from "@/hooks/use-pessoas";
+import { diasDaSemana, isoData, motivoFechado, segundaDaSemana, type Pessoa } from "@/lib/almoco-data";
+import { useBuscaPessoas } from "@/hooks/use-busca-pessoas";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import { useMarcacoesDaPessoa, useSalvarMarcacoes } from "@/hooks/use-marcacoes";
 import { mensagemDeErro } from "@/lib/erros";
@@ -50,11 +50,11 @@ function Index() {
 
   const seg = useMemo(() => segundaDaSemana(), []);
   const dias = useMemo(() => diasDaSemana(seg), [seg]);
-  const pessoas = usePessoas();
+  const busca = useBuscaPessoas(query);
   const config = useConfiguracoes();
   const salvas = useMarcacoesDaPessoa(pessoa?.id, seg);
   const salvar = useSalvarMarcacoes();
-  const sugestoes = useMemo(() => buscarPessoas(pessoas.data ?? [], query), [pessoas.data, query]);
+  const sugestoes = busca.data ?? [];
   const total = marcas.filter(Boolean).length;
   // Dias que o público não pode mais alterar (prazo encerrado ou sem almoço). O banco também valida.
   const fechados = dias.map((d) => motivoFechado(isoData(d), config.data));
@@ -195,13 +195,15 @@ function Index() {
             </div>
             {focused && query.trim() && (
               <ul className="mt-2 max-h-80 overflow-y-auto">
-                {pessoas.isLoading ? (
+                {busca.curto ? (
+                  <li className="px-4 py-5 text-center text-sm text-muted-foreground">Digite pelo menos 2 letras do nome ou 3 números do NIF</li>
+                ) : busca.isError ? (
+                  <li className="px-4 py-5 text-center text-sm text-muted-foreground">{mensagemDeErro(busca.error)}</li>
+                ) : busca.isLoading || (busca.buscando && sugestoes.length === 0) ? (
                   <li className="space-y-2 p-2">
                     <Skeleton className="h-14 w-full rounded-2xl" />
                     <Skeleton className="h-14 w-full rounded-2xl" />
                   </li>
-                ) : pessoas.isError ? (
-                  <li className="px-4 py-5 text-center text-sm text-muted-foreground">{mensagemDeErro(pessoas.error)}</li>
                 ) : sugestoes.length === 0 ? (
                   <li className="px-4 py-5 text-center text-sm text-muted-foreground">Ninguém encontrado 🤔</li>
                 ) : (
@@ -215,7 +217,8 @@ function Index() {
                         <Avatar nome={p.nome} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-semibold text-card-foreground">{p.nome}</p>
-                          <p className="text-xs text-muted-foreground">{p.nif ? `NIF ${p.nif} · ` : ""}{p.grupo}</p>
+                          {/* O NIF só aparece (mascarado) para diferenciar pessoas com o mesmo nome */}
+                          {p.homonimo && <p className="text-xs text-muted-foreground">NIF {p.nifMascarado}</p>}
                         </div>
                         <ChevronRight className="h-5 w-5 text-muted-foreground transition group-hover:translate-x-0.5" />
                       </button>
@@ -226,9 +229,7 @@ function Index() {
             )}
           </div>
 
-          {!pessoa && pessoas.isError ? (
-            <EstadoErro erro={pessoas.error} onTentar={() => pessoas.refetch()} />
-          ) : !pessoa ? (
+          {!pessoa ? (
             <div className="mt-12 flex flex-col items-center text-center animate-rise [animation-delay:300ms]">
               <div className="relative mb-5">
                 <div className="absolute inset-0 rounded-full bg-primary/30 animate-ring" />
@@ -245,9 +246,9 @@ function Index() {
                 <Avatar nome={pessoa.nome} big />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-lg font-bold leading-tight">{pessoa.nome}</p>
-                  <p className="text-sm text-muted-foreground">{pessoa.nif ? `NIF ${pessoa.nif}` : "Sem NIF"}</p>
+                  <p className="text-sm text-muted-foreground">NIF {pessoa.nifMascarado}</p>
                 </div>
-                <GrupoTag grupo={pessoa.grupo} />
+                <GrupoTag />
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-3 animate-rise [animation-delay:60ms]">
@@ -387,12 +388,8 @@ function Avatar({ nome, big }: { nome: string; big?: boolean }) {
   );
 }
 
-function GrupoTag({ grupo }: { grupo: string }) {
-  return (
-    <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold", grupo === "Robótica" ? "bg-accent/15 text-accent" : "bg-primary/10 text-primary")}>
-      {grupo === "Robótica" ? "🤖 Robótica" : "Colaborador"}
-    </span>
-  );
+function GrupoTag() {
+  return <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">Colaborador</span>;
 }
 
 const CONFETE_CORES = ["bg-accent", "bg-primary", "bg-success", "bg-header-foreground"];

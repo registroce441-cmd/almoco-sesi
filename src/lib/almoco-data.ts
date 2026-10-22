@@ -1,18 +1,10 @@
-export type Grupo = string;
+/** Pessoa devolvida pela busca. O NIF nunca vem inteiro: só os 3 últimos dígitos ("***482"). */
 export interface Pessoa {
   id: string;
   nome: string;
-  nif: string | null;
-  grupo: Grupo;
-}
-
-export const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-/** Filtra a lista de pessoas (já carregada do banco) por nome ou NIF, ignorando acentos. */
-export function buscarPessoas(pessoas: Pessoa[], q: string, limit = 6): Pessoa[] {
-  const t = norm(q.trim());
-  if (!t) return [];
-  return pessoas.filter((p) => norm(p.nome).includes(t) || (p.nif ?? "").includes(t)).slice(0, limit);
+  nifMascarado: string;
+  /** Existe outra pessoa com o mesmo nome: mostramos o NIF mascarado para diferenciar. */
+  homonimo: boolean;
 }
 
 /** Monday of the current week; on Sat/Sun returns next week's Monday. */
