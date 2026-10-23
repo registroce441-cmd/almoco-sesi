@@ -17,7 +17,7 @@ export const Route = createFileRoute("/")({
       { title: "Almoço SESI — Confirme seu almoço da semana" },
       { name: "description", content: "Confirme rapidamente em quais dias da semana você vai almoçar no SESI." },
       { property: "og:title", content: "Almoço SESI" },
-      { property: "og:description", content: "Confirmação de almoço para colaboradores e alunos de extracurriculares." },
+      { property: "og:description", content: "Confirmação de almoço para os colaboradores do SESI." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
