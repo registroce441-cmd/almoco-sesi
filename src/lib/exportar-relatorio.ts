@@ -19,7 +19,8 @@ const rotuloSemana = (inicio: string, fim: string) => `${formatarDiaMes(inicio)}
 function resumo(dias: DiaTotal[]) {
   const total = totalDoPeriodo(dias);
   const comAlmoco = dias.filter((d) => d.total > 0).length;
-  return { total, diasUteis: dias.length, media: dias.length ? Math.round((total / dias.length) * 10) / 10 : 0, comAlmoco };
+  // A média ignora dias sem nenhuma refeição (feriados e dias que ainda não chegaram), para não distorcer o gasto.
+  return { total, diasUteis: dias.length, media: comAlmoco ? Math.round((total / comAlmoco) * 10) / 10 : 0, comAlmoco };
 }
 
 /** Excel com 3 abas: Resumo, Por dia e Por semana. */
@@ -35,7 +36,8 @@ export async function exportarRelatorioExcel(dias: DiaTotal[], meta: MetaRelator
     ["Período", `${formatarData(meta.inicio)} a ${formatarData(meta.fim)}`],
     ["Total de refeições no período", r.total],
     ["Dias úteis no período", r.diasUteis],
-    ["Média de refeições por dia útil", r.media],
+    ["Dias com refeições", r.comAlmoco],
+    ["Média por dia com refeições", r.media],
     ["Gerado em", new Date().toLocaleString("pt-BR")],
   ]);
   wsResumo["!cols"] = [{ wch: 34 }, { wch: 28 }];
@@ -84,7 +86,7 @@ export async function exportarRelatorioPdf(dias: DiaTotal[], meta: MetaRelatorio
   const caixas = [
     ["Total no período", String(r.total)],
     ["Dias úteis", String(r.diasUteis)],
-    ["Média por dia útil", String(r.media).replace(".", ",")],
+    ["Média por dia com refeições", String(r.media).replace(".", ",")],
   ] as const;
   const w = (largura - 28 - 8) / 3;
   caixas.forEach(([rotulo, valor], i) => {

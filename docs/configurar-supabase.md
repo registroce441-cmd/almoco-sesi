@@ -1,6 +1,6 @@
 # Configurar o Supabase (passo a passo)
 
-O app guarda pessoas, cardápio e marcações num banco do [Supabase](https://supabase.com).
+O app guarda os colaboradores, o cardápio e as marcações num banco do [Supabase](https://supabase.com).
 Você só precisa fazer isso uma vez. (Os nomes dos menus do painel podem mudar um pouco com o tempo.)
 
 ## 1. Criar o projeto
@@ -16,9 +16,16 @@ Você só precisa fazer isso uma vez. (Os nomes dos menus do painel podem mudar 
    1. `supabase/migrations/20261021000001_schema.sql`
    2. `supabase/migrations/20261021000002_regras_de_prazo.sql`
    3. `supabase/migrations/20261021000003_seguranca_rls.sql`
-   4. `supabase/seed.sql` (30 pessoas **fictícias** e 4 semanas de cardápio; pode rodar de novo sem duplicar)
+   4. `supabase/migrations/20261022000001_escopo_colaboradores.sql`
+   5. `supabase/migrations/20261022000002_privacidade.sql`
+   6. `supabase/seed.sql` (30 colaboradores **fictícios** e 4 semanas de cardápio; pode rodar de novo sem duplicar)
 
 Cada arquivo deve terminar com "Success". Se algum der erro, não pule para o próximo: leia a mensagem e corrija antes.
+
+> **Já tinha rodado as migrations 1 a 3 (e o seed antigo, com alunos)?** Rode só a **4** e a **5**.
+> A 4 apaga o grupo "Robótica", os alunos e as marcações deles, e torna o NIF obrigatório. Se ainda houver
+> algum colaborador sem NIF, ela **para antes de apagar qualquer coisa** e diz quantos faltam: preencha e rode de novo.
+> Depois pode rodar o `seed.sql` novo para incluir os colaboradores de teste.
 
 ## 3. Pegar a URL e a chave pública
 
@@ -40,10 +47,25 @@ VITE_SUPABASE_ANON_KEY=sua-chave-publica
 
 3. Rode `npm install` e depois `npm run dev`. O arquivo `.env` já está no `.gitignore` e não vai para o GitHub.
 
-## 5. Preparar o login do administrador (para a Etapa 2)
+## 5. Definir o código de acesso da cozinha
+
+Os **nomes** de quem vai almoçar só aparecem para a cozinha e a administração. A cozinha entra com um código.
+No **SQL Editor**, escolha o seu (mínimo de 6 caracteres) e rode:
+
+```sql
+select public.definir_codigo_cozinha('troque-por-um-codigo-seu');
+```
+
+- Para trocar o código, rode o comando de novo com outro valor (o código antigo deixa de valer na hora).
+- Para desligar o acesso por código: `select public.remover_codigo_cozinha();`
+- O código fica guardado só como *hash* (ninguém consegue ler o original, nem pelo painel).
+- **Proteção contra chute:** depois de 10 códigos errados em 5 minutos, o acesso por código fica bloqueado por alguns
+  minutos. O administrador logado nunca é bloqueado.
+- Na Etapa 2 você poderá trocar o código pelo painel admin.
+
+## 6. Preparar o login do administrador (para a Etapa 2)
 
 1. Em **Authentication → Sign In / Providers** (ou **Settings**), **desligue o cadastro público de novos usuários**.
-   Assim ninguém consegue criar conta sozinho.
 2. Em **Authentication → Users**, clique em **Add user** e crie o seu usuário (e-mail e senha).
 3. No **SQL Editor**, torne esse usuário administrador (troque o e-mail):
 
@@ -52,12 +74,19 @@ insert into public.admins (user_id)
 select id from auth.users where email = 'seu-email@exemplo.com';
 ```
 
-## Como as regras funcionam
+## Como a privacidade funciona
 
-- **Público (sem login):** lê pessoas ativas, grupos, cardápio, configurações e marcações, e grava marcações **apenas** em dias úteis liberados e dentro do prazo.
-- **Prazo:** `configuracoes.prazo_limite` é o horário limite **no próprio dia do almoço**, no fuso de São Paulo (padrão 09:00). Dias em `dias_bloqueados` não aceitam marcação.
-- **Admin:** quem está na tabela `admins` e logado pode editar todo o resto.
-- As regras vivem **no banco** (função, gatilho e RLS), então valem mesmo se alguém tentar burlar o app.
+| Quem | O que vê |
+|---|---|
+| **Qualquer pessoa** (sem login) | Cardápio; **total de refeições por dia** e da semana; busca de colaboradores (só o nome; o NIF nunca sai inteiro, só `***482` para diferenciar homônimos); marcar ou desmarcar os próprios dias |
+| **Cozinha** (código) | Tudo isso + **quem vai em cada dia** (nome e NIF) + relatório de refeições por dia, semana e período |
+| **Admin** (login) | Tudo, e edita pessoas, cardápio e configurações |
+
+- O público **não consegue ler** as tabelas de pessoas nem de marcações: ele só chama funções do banco que devolvem o mínimo necessário.
+- **Prazo:** `configuracoes.prazo_limite` é o horário limite **no próprio dia do almoço**, fuso de São Paulo (padrão 09:00).
+  Dias em `dias_bloqueados` não aceitam marcação. Tudo é validado **no banco**, então vale mesmo se alguém tentar burlar o app.
+- **NIF:** obrigatório, único e sem espaços nas pontas.
+- As telas se atualizam sozinhas a cada 15 segundos (a Lista e os totais).
 
 Para mudar o prazo ou bloquear um dia antes de existir o painel admin, use o SQL Editor:
 
@@ -65,11 +94,6 @@ Para mudar o prazo ou bloquear um dia antes de existir o painel admin, use o SQL
 update public.configuracoes set prazo_limite = '10:30';
 update public.configuracoes set dias_bloqueados = array['2026-11-02', '2026-11-15']::date[];
 ```
-
-## Tempo real
-
-A Lista de Almoço se atualiza sozinha quando alguém marca ou desmarca. A migration 3 já inclui a tabela
-`marcacoes` na publicação `supabase_realtime`. Se não atualizar sozinha, confira em **Database → Publications**.
 
 ## Regerar os tipos do TypeScript (opcional)
 
