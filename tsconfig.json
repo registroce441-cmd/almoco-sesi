@@ -2,8 +2,10 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "supabase/tests/**/*.ts",
     "vite.config.ts",
     "vitest.config.ts",
+    "vitest.db.config.ts",
     "eslint.config.js"
   ],
   "compilerOptions": {
