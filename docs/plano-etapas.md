@@ -31,6 +31,7 @@ Feita e testada contra Postgres local (74 testes de banco + 50 de tela). **Falta
 
 ## Etapa 3 — Acabamento e portfólio
 **3A ✅:** aviso da Home e banner de prazo, PDF do cardápio, README novo e checklist atualizado.
+**3B ✅:** PWA instalável (manifest, ícones, convite Android/iPhone), service worker (app e cardápio, nunca a Lista nem o admin) e aviso offline.
 Itens abaixo ainda pendentes (3B em diante):
 - Modo demonstração (dados 100% fictícios, sem tocar nos dados reais).
 - Log de auditoria simples (quem, o quê, quando) com aba para o admin.

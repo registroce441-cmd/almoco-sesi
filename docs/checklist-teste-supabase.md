@@ -285,6 +285,46 @@ Faça com planilhas **geradas no Excel de verdade** (não só CSV de teste).
 | 11b.13 | Botão Baixar PDF numa semana **sem nenhum** cardápio | Desabilitado | [ ] |
 | 11b.14 | Imprimir o PDF em A4 | Cabe numa folha (semana normal) | [ ] |
 
+## 11c. Etapa 3B: aplicativo instalável (PWA) e modo offline
+
+> O service worker **só roda no app publicado (HTTPS)**, não em `npm run dev`. Teste na URL de produção/preview, ou com `npm run build`
+> servido por HTTPS. Em testes repetidos, use **Application → Service Workers → Unregister** e **Clear site data** no Chrome.
+
+**Instalação**
+
+| # | Ação | Esperado | OK |
+|---|---|---|---|
+| 11c.1 | Chrome → DevTools → **Application → Manifest** | Nome "Almoço SESI", cor do tema azul, ícones 192/512 e **maskable** sem avisos | [ ] |
+| 11c.2 | Lighthouse (categoria PWA/Installable) ou ícone "instalar" na barra do Chrome desktop | Instalável | [ ] |
+| 11c.3 | **Android/Chrome**: abrir a Home | Aparece o cartão "Adicione à tela inicial" com **Instalar** e **Agora não** | [ ] |
+| 11c.4 | Android: tocar em **Instalar** e confirmar | Instala; ícone na tela inicial; abre **sem barra do navegador**, com splash azul | [ ] |
+| 11c.5 | Android: o ícone fica bom no formato redondo/quadrado do aparelho (maskable, sem cortar o prato) | [ ] |
+| 11c.6 | Android: tocar em **Agora não** (ou no X) e recarregar/reabrir o site | O cartão **não volta** (só voltaria limpando os dados do site) | [ ] |
+| 11c.7 | Android: depois de instalado, abrir pelo ícone | O convite **não** aparece dentro do app instalado | [ ] |
+| 11c.8 | **iPhone/Safari**: abrir a Home | Cartão com as instruções: **Compartilhar → Adicionar à Tela de Início** (sem botão Instalar) | [ ] |
+| 11c.9 | iPhone: seguir as instruções | Ícone do prato com o nome "Almoço SESI"; abre em tela cheia, barra de status preta | [ ] |
+| 11c.10 | iPhone: fechar o cartão (X) e recarregar | Não volta | [ ] |
+| 11c.11 | iPhone: abrir pelo ícone instalado | O cartão **não** aparece | [ ] |
+| 11c.12 | Atalhos (segurar o ícone no Android): "Marcar almoço" e "Cardápio da semana" | Abrem as telas certas | [ ] |
+| 11c.13 | Desktop: o convite **não** aparece em navegadores sem suporte (Firefox/Safari desktop) | [ ] |
+
+**Offline e internet fraca** (instale/abra o app **com internet** antes, para ele guardar o que precisa)
+
+| # | Ação | Esperado | OK |
+|---|---|---|---|
+| 11c.14 | Application → Service Workers | `sw.js` "activated and running" | [ ] |
+| 11c.15 | Abrir o **Cardápio**, depois ativar **Modo avião** e recarregar | O cardápio da semana abre (e as fotos que você já viu) | [ ] |
+| 11c.16 | Modo avião: faixa preta no topo "Você está sem internet…"; ao reconectar, faixa verde "Conexão restabelecida" por ~3 s | [ ] |
+| 11c.17 | Modo avião: abrir a **Home** | Abre; buscar nome/marcar mostra erro amigável (precisa de internet), sem tela quebrada | [ ] |
+| 11c.18 | Modo avião: abrir **/lista** e **/admin** | Página "Você está sem internet" com **Tentar de novo** (nada de dados guardados) | [ ] |
+| 11c.19 | Chrome DevTools → Network → **Slow 3G** e abrir o Cardápio | Abre em poucos segundos; se a rede passar de ~3,5 s, mostra a versão guardada | [ ] |
+| 11c.20 | **Privacidade** — Application → **Cache Storage**: abrir cada cache `almoco-*` | Só arquivos do app, páginas `/` e `/cardapio`, respostas de `/rest/v1/cardapio` e fotos. **Nenhum** `rpc/lista_cozinha`, `rpc/relatorio_totais`, `/lista`, `/admin`, `pessoas` ou `marcacoes` | [ ] |
+| 11c.21 | Logar como admin, navegar por todo o painel e olhar o Cache Storage de novo | Nada novo do painel nos caches | [ ] |
+| 11c.22 | Abrir a Lista da Cozinha com código, **sair do código** e conferir o Cache Storage | Nenhum nome de pessoa em lugar nenhum do cache | [ ] |
+| 11c.23 | Publicar uma versão nova do app e reabrir | Pega a versão nova na próxima visita (páginas vão primeiro à rede); caches `almoco-*` antigos são apagados quando mudar `VERSAO` em `public/sw.js` | [ ] |
+| 11c.24 | Trocar o cardápio no painel e abrir o Cardápio com internet | Mostra o novo (rede primeiro); só usa o guardado se a rede falhar | [ ] |
+| 11c.25 | Hospedagem: `sw.js` e `manifest.webmanifest` são servidos **sem cache longo** (senão a atualização demora) e com HTTPS | [ ] |
+
 ## 12. Depois de testar
 
 - [ ] Apagar as pessoas/marcações/cardápio de teste e as fotos do bucket (ou rodar o `seed.sql` num projeto de teste separado).

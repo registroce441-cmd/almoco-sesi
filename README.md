@@ -12,6 +12,9 @@ Mobile-first (pensado para 360 px), em português do Brasil, com modo claro e es
 | **Cozinha** (código de acesso) | Vê **quem vai** em cada dia, os totais por dia e semana, e o **relatório** de refeições (Excel e PDF). |
 | **Administração** (login em `/admin`) | Painel com visão geral, **pessoas** (cadastro e importação por planilha só com nome e NIF), **cardápio** (editor semanal, duplicar semana, foto do prato), **marcações manuais** com motivo, **relatório** e **configurações** (prazo, dias sem almoço, aviso da Home, nome da unidade e código da cozinha). |
 
+**Aplicativo instalável (PWA):** dá para adicionar à tela inicial no Android e no iPhone. O cardápio abre mesmo com internet fraca ou sem internet;
+a Lista da cozinha e o painel **nunca** ficam guardados no aparelho.
+
 **Privacidade:** o público não lê as tabelas de pessoas nem de marcações; só chama funções do banco que devolvem o mínimo
 (o NIF aparece mascarado, `***482`). Regras de prazo e permissões são validadas **no banco** (RLS), não só na tela.
 
