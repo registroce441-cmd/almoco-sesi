@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Leaf, Salad, IceCreamCone, Share2, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileDown, Leaf, Salad, IceCreamCone, Share2, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { diasDaSemana, segundaDaSemana } from "@/lib/almoco-data";
+import { diasDaSemana, isoData, segundaDaSemana } from "@/lib/almoco-data";
+import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import { useCardapio } from "@/hooks/use-cardapio";
 import { EstadoErro } from "@/components/EstadoErro";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -53,6 +54,26 @@ function Cardapio() {
   const irPara = (i: number) => {
     setAtivo(i);
     document.getElementById(`dia-${i}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const config = useConfiguracoes();
+  const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [erroPdf, setErroPdf] = useState(false);
+  const baixarPdf = async () => {
+    if (!menu) return;
+    setGerandoPdf(true);
+    setErroPdf(false);
+    try {
+      const { exportarCardapioPdf } = await import("@/lib/exportar-cardapio");
+      await exportarCardapioPdf(
+        menu.map((refeicao, i) => ({ nome: NOMES[i]!, data: fmt(dias[i]!), refeicao })),
+        { unidade: config.data?.nome_unidade ?? "SESI", periodo: `${fmt(dias[0]!)} a ${fmt(dias[4]!)}`, inicio: isoData(dias[0]!), fim: isoData(dias[4]!) },
+      );
+    } catch {
+      setErroPdf(true);
+    } finally {
+      setGerandoPdf(false);
+    }
   };
 
   const compartilhar = () => {
@@ -157,13 +178,27 @@ function Cardapio() {
           })}
         </div>
 
-        <button
-          onClick={compartilhar}
-          disabled={!menu?.some(Boolean)}
-          className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-success font-bold text-success-foreground shadow-lg transition active:scale-[.98] disabled:pointer-events-none disabled:opacity-60 md:mx-auto md:w-auto md:px-8"
-        >
-          <Share2 className="h-5 w-5" /> Compartilhar no WhatsApp
-        </button>
+        <div className="mt-6 flex flex-col gap-3 md:flex-row md:justify-center">
+          <button
+            onClick={compartilhar}
+            disabled={!menu?.some(Boolean)}
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-success font-bold text-success-foreground shadow-lg transition active:scale-[.98] disabled:pointer-events-none disabled:opacity-60 md:w-auto md:px-8"
+          >
+            <Share2 className="h-5 w-5" /> Compartilhar no WhatsApp
+          </button>
+          <button
+            onClick={baixarPdf}
+            disabled={!menu?.some(Boolean) || gerandoPdf}
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border bg-card font-bold transition hover:bg-muted active:scale-[.98] disabled:pointer-events-none disabled:opacity-60 md:w-auto md:px-8"
+          >
+            <FileDown className="h-5 w-5" /> {gerandoPdf ? "Gerando PDF…" : "Baixar PDF"}
+          </button>
+        </div>
+        {erroPdf && (
+          <p role="alert" className="mt-3 text-center text-sm font-semibold text-accent">
+            Não consegui gerar o PDF. Tente de novo.
+          </p>
+        )}
       </main>
     </div>
   );
