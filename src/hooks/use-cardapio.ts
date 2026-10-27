@@ -9,6 +9,8 @@ export function useCardapio(seg: Date) {
   return useQuery({
     queryKey: ["cardapio", dias[0]],
     staleTime: 60_000,
+    // Mesmo sem internet tenta a rede: é aí que o service worker entrega o cardápio guardado.
+    networkMode: "offlineFirst",
     queryFn: async (): Promise<(Refeicao | null)[]> => {
       const { data, error } = await getSupabase()
         .from("cardapio")

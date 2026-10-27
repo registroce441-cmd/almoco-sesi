@@ -9,6 +9,7 @@ import { useMarcacoesDaPessoa, useSalvarMarcacoes } from "@/hooks/use-marcacoes"
 import { mensagemDeErro } from "@/lib/erros";
 import { EstadoErro } from "@/components/EstadoErro";
 import { BannerHome } from "@/components/BannerHome";
+import { InstalarApp } from "@/components/InstalarApp";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -172,6 +173,7 @@ function Index() {
       ) : (
         <main className={cn("relative mx-auto -mt-12 w-full max-w-3xl flex-1 px-4", pessoa ? "pb-56 md:pb-40" : "pb-28 md:pb-10")}>
           <BannerHome config={config.data} />
+          <InstalarApp />
           {/* Busca */}
           <div className="relative z-20 rounded-3xl border bg-card p-2 shadow-glow animate-rise [animation-delay:200ms]">
             <div className="relative">
