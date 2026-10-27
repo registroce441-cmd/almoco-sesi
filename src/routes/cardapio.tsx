@@ -136,6 +136,7 @@ function Cardapio() {
                 ) : (
                   <>
                     <h3 className="relative mt-4 text-xl font-bold leading-snug lg:text-lg">{m.prato}</h3>
+                    {m.foto && <img src={m.foto} alt={`Foto do prato: ${m.prato}`} loading="lazy" className="relative mt-3 aspect-video w-full rounded-2xl object-cover" />}
                     <ul className={cn("relative mt-3 space-y-2 text-sm", isHoje ? "opacity-90" : "text-muted-foreground")}>
                       {m.acompanhamento && <li className="flex gap-2"><Salad className="mt-0.5 h-4 w-4 shrink-0" /> {m.acompanhamento}</li>}
                       {m.sobremesa && <li className="flex gap-2"><IceCreamCone className="mt-0.5 h-4 w-4 shrink-0" /> {m.sobremesa}</li>}

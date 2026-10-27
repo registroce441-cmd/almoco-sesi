@@ -10,12 +10,25 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CardapioRouteImport } from './routes/cardapio'
 import { Route as ListaRouteImport } from './routes/lista'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminCardapioRouteImport } from './routes/admin.cardapio'
+import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
+import { Route as AdminMarcacoesRouteImport } from './routes/admin.marcacoes'
+import { Route as AdminPessoasRouteImport } from './routes/admin.pessoas'
+import { Route as AdminRelatorioRouteImport } from './routes/admin.relatorio'
+import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CardapioRoute = CardapioRouteImport.update({
@@ -28,35 +41,128 @@ const ListaRoute = ListaRouteImport.update({
   path: '/lista',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCardapioRoute = AdminCardapioRouteImport.update({
+  id: '/cardapio',
+  path: '/cardapio',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMarcacoesRoute = AdminMarcacoesRouteImport.update({
+  id: '/marcacoes',
+  path: '/marcacoes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPessoasRoute = AdminPessoasRouteImport.update({
+  id: '/pessoas',
+  path: '/pessoas',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRelatorioRoute = AdminRelatorioRouteImport.update({
+  id: '/relatorio',
+  path: '/relatorio',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin_/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/cardapio': typeof CardapioRoute
   '/lista': typeof ListaRoute
+  '/admin/cardapio': typeof AdminCardapioRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/marcacoes': typeof AdminMarcacoesRoute
+  '/admin/pessoas': typeof AdminPessoasRoute
+  '/admin/relatorio': typeof AdminRelatorioRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cardapio': typeof CardapioRoute
   '/lista': typeof ListaRoute
+  '/admin/cardapio': typeof AdminCardapioRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/marcacoes': typeof AdminMarcacoesRoute
+  '/admin/pessoas': typeof AdminPessoasRoute
+  '/admin/relatorio': typeof AdminRelatorioRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/cardapio': typeof CardapioRoute
   '/lista': typeof ListaRoute
+  '/admin/cardapio': typeof AdminCardapioRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/marcacoes': typeof AdminMarcacoesRoute
+  '/admin/pessoas': typeof AdminPessoasRoute
+  '/admin/relatorio': typeof AdminRelatorioRoute
+  '/admin_/login': typeof AdminLoginRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cardapio' | '/lista'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/cardapio'
+    | '/lista'
+    | '/admin/cardapio'
+    | '/admin/configuracoes'
+    | '/admin/marcacoes'
+    | '/admin/pessoas'
+    | '/admin/relatorio'
+    | '/admin/login'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cardapio' | '/lista'
-  id: '__root__' | '/' | '/cardapio' | '/lista'
+  to:
+    | '/'
+    | '/cardapio'
+    | '/lista'
+    | '/admin/cardapio'
+    | '/admin/configuracoes'
+    | '/admin/marcacoes'
+    | '/admin/pessoas'
+    | '/admin/relatorio'
+    | '/admin/login'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/cardapio'
+    | '/lista'
+    | '/admin/cardapio'
+    | '/admin/configuracoes'
+    | '/admin/marcacoes'
+    | '/admin/pessoas'
+    | '/admin/relatorio'
+    | '/admin_/login'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   CardapioRoute: typeof CardapioRoute
   ListaRoute: typeof ListaRoute
+  AdminLoginRoute: typeof AdminLoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -66,6 +172,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cardapio': {
@@ -82,13 +195,84 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ListaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/cardapio': {
+      id: '/admin/cardapio'
+      path: '/cardapio'
+      fullPath: '/admin/cardapio'
+      preLoaderRoute: typeof AdminCardapioRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/configuracoes': {
+      id: '/admin/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AdminConfiguracoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/marcacoes': {
+      id: '/admin/marcacoes'
+      path: '/marcacoes'
+      fullPath: '/admin/marcacoes'
+      preLoaderRoute: typeof AdminMarcacoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pessoas': {
+      id: '/admin/pessoas'
+      path: '/pessoas'
+      fullPath: '/admin/pessoas'
+      preLoaderRoute: typeof AdminPessoasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/relatorio': {
+      id: '/admin/relatorio'
+      path: '/relatorio'
+      fullPath: '/admin/relatorio'
+      preLoaderRoute: typeof AdminRelatorioRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin_/login': {
+      id: '/admin_/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminCardapioRoute: typeof AdminCardapioRoute
+  AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
+  AdminMarcacoesRoute: typeof AdminMarcacoesRoute
+  AdminPessoasRoute: typeof AdminPessoasRoute
+  AdminRelatorioRoute: typeof AdminRelatorioRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminCardapioRoute: AdminCardapioRoute,
+  AdminConfiguracoesRoute: AdminConfiguracoesRoute,
+  AdminMarcacoesRoute: AdminMarcacoesRoute,
+  AdminPessoasRoute: AdminPessoasRoute,
+  AdminRelatorioRoute: AdminRelatorioRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   CardapioRoute: CardapioRoute,
   ListaRoute: ListaRoute,
+  AdminLoginRoute: AdminLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

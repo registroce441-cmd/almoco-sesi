@@ -129,6 +129,29 @@ export type Database = {
           },
         ];
       };
+      marcacoes_manuais: {
+        Row: {
+          id: string;
+          pessoa_id: string;
+          data: string;
+          anterior: boolean | null;
+          novo: boolean | null;
+          motivo: string | null;
+          admin_id: string | null;
+          criado_em: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "marcacoes_manuais_pessoa_id_fkey";
+            columns: ["pessoa_id"];
+            isOneToOne: false;
+            referencedRelation: "pessoas";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       pessoas: {
         Row: {
           id: string;
@@ -170,6 +193,16 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      admin_duplicar_cardapio: {
+        Args: { p_origem: string; p_destino: string; p_substituir?: boolean };
+        Returns: Json;
+      };
+      admin_importar_pessoas: { Args: { p_linhas: Json }; Returns: Json };
+      admin_salvar_marcacoes: {
+        Args: { p_pessoa_id: string; p_marcas: Json; p_motivo?: string };
+        Returns: Json;
+      };
+      admin_status_codigo_cozinha: { Args: Record<PropertyKey, never>; Returns: Json };
       buscar_pessoas: {
         Args: { p_termo: string };
         Returns: { id: string; nome: string; nif_mascarado: string; homonimo: boolean }[];

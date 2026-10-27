@@ -2,7 +2,18 @@ import type { ReactNode } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTema } from "@/lib/theme";
 
-export function PageHeader({ eyebrow, title, children }: { eyebrow?: ReactNode; title: ReactNode; children?: ReactNode }) {
+export function PageHeader({
+  eyebrow,
+  title,
+  acoes,
+  children,
+}: {
+  eyebrow?: ReactNode;
+  title: ReactNode;
+  /** Botões extras na barra do celular, antes do botão de tema (ex.: "Sair" no painel). */
+  acoes?: ReactNode;
+  children?: ReactNode;
+}) {
   const { dark, toggle } = useTema();
   return (
     <header className="relative overflow-hidden bg-hero text-header-foreground pt-safe print:hidden">
@@ -15,6 +26,7 @@ export function PageHeader({ eyebrow, title, children }: { eyebrow?: ReactNode; 
           <p className="flex-1 text-sm font-semibold opacity-90">
             Almoço <span className="text-accent">SESI</span>
           </p>
+          {acoes}
           <button onClick={toggle} aria-label="Alternar tema" className="grid h-12 w-12 place-items-center rounded-2xl border border-header-foreground/15 bg-header-foreground/10 backdrop-blur">
             {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>

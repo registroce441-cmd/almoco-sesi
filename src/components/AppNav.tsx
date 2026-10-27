@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { CalendarCheck, ChefHat, UtensilsCrossed, Moon, Sun } from "lucide-react";
 import { useTema } from "@/lib/theme";
 
@@ -10,6 +10,9 @@ const ITENS = [
 
 export function AppNav() {
   const { dark, toggle } = useTema();
+  const noPainel = useRouterState({ select: (s) => s.location.pathname.startsWith("/admin") });
+  // O painel do administrador tem a própria navegação.
+  if (noPainel) return null;
   return (
     <>
       {/* Desktop: topo */}

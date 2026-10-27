@@ -66,14 +66,19 @@ export function useListaCozinha(seg: Date, codigo: string | null) {
 }
 
 /** Total de refeições de cada dia útil do período (relatório de gastos). */
-export function useRelatorio(inicio: string, fim: string, codigo: string | null, ativo: boolean) {
+export function useRelatorio(inicio: string, fim: string, codigo: string | null, ativo: boolean, comoAdmin = false) {
   return useQuery({
-    queryKey: ["relatorio", inicio, fim, codigo],
-    enabled: ativo && Boolean(codigo) && Boolean(inicio) && Boolean(fim) && fim >= inicio,
+    queryKey: ["relatorio", inicio, fim, comoAdmin ? "admin" : codigo],
+    enabled: ativo && (comoAdmin || Boolean(codigo)) && Boolean(inicio) && Boolean(fim) && fim >= inicio,
     retry: false,
     staleTime: 30_000,
     queryFn: async (): Promise<Resposta<{ dias: DiaTotal[] }>> => {
-      const { data, error } = await getSupabase().rpc("relatorio_totais", { p_inicio: inicio, p_fim: fim, p_codigo: codigo! });
+      // O admin logado não precisa de código: o banco o reconhece pelo login.
+      const { data, error } = await getSupabase().rpc("relatorio_totais", {
+        p_inicio: inicio,
+        p_fim: fim,
+        ...(codigo ? { p_codigo: codigo } : {}),
+      });
       if (error) throw error;
       return data as unknown as Resposta<{ dias: DiaTotal[] }>;
     },

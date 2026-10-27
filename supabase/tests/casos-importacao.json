@@ -1,0 +1,26 @@
+{
+  "descricao": "Mesmos casos usados pelo validador do navegador (src/test/importacao.test.ts) e pela função admin_importar_pessoas (supabase/tests/importacao-pessoas.test.ts). Se os dois discordarem, um teste falha.",
+  "existentes": { "E1": "Pessoa Existente" },
+  "casos": [
+    { "nome": "Ana Souza", "nif": "100", "esperado": null },
+    { "nome": "Bruno Lima", "nif": "101", "esperado": null },
+    { "nome": "", "nif": "", "esperado": "vazia" },
+    { "nome": "Sem Nif", "nif": "", "esperado": "NIF ausente" },
+    { "nome": "", "nif": "102", "esperado": "Nome ausente" },
+    { "nome": "Nif Com Espaço", "nif": "10 3", "esperado": "NIF não pode ter espaços" },
+    {
+      "nome": "Nif Enorme",
+      "nif": "123456789012345678901234567890X",
+      "esperado": "NIF muito longo"
+    },
+    {
+      "nome": "Nome enorme aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "nif": "104",
+      "esperado": "Nome muito longo"
+    },
+    { "nome": "Ana de novo", "nif": "100", "esperado": "NIF repetido na planilha" },
+    { "nome": "Quem já existe", "nif": "E1", "esperado": "NIF já cadastrado" },
+    { "nome": "Repetindo o existente", "nif": "E1", "esperado": "NIF repetido na planilha" },
+    { "nome": "Carla Mendes", "nif": "105", "esperado": null }
+  ]
+}

@@ -21,7 +21,13 @@ afterAll(async () => {
 const definir = (t: Tx, quem: Parameters<Tx["q"]>[0], codigo: string) =>
   t.q(quem, "select public.definir_codigo_cozinha($1)", [codigo]);
 const acesso = async (t: Tx, codigo: string | null) =>
-  (await t.q<{ r: { ok: boolean; motivo?: string } }>(ANON, "select public.lista_cozinha(public.hoje_sp(), $1) as r", [codigo])).rows[0]!.r;
+  (
+    await t.q<{ r: { ok: boolean; motivo?: string } }>(
+      ANON,
+      "select public.lista_cozinha(public.hoje_sp(), $1) as r",
+      [codigo],
+    )
+  ).rows[0]!.r;
 
 describe("definir_codigo_cozinha (tela Configurações) e admin_status_codigo_cozinha", () => {
   it("antes de definir, o status diz que não está configurado", async () => {
@@ -37,7 +43,10 @@ describe("definir_codigo_cozinha (tela Configurações) e admin_status_codigo_co
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
       await definir(t, adm, "panela-quente-26");
-      const st = await t.valor<{ configurado: boolean; atualizado_em: string }>(adm, "select public.admin_status_codigo_cozinha()");
+      const st = await t.valor<{ configurado: boolean; atualizado_em: string }>(
+        adm,
+        "select public.admin_status_codigo_cozinha()",
+      );
       expect(st.configurado).toBe(true);
       expect(Date.now() - new Date(st.atualizado_em).getTime()).toBeLessThan(60_000);
 
@@ -84,9 +93,14 @@ describe("definir_codigo_cozinha (tela Configurações) e admin_status_codigo_co
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
       await definir(t, adm, "segredo-123");
-      const st = await t.valor<Record<string, unknown>>(adm, "select public.admin_status_codigo_cozinha()");
+      const st = await t.valor<Record<string, unknown>>(
+        adm,
+        "select public.admin_status_codigo_cozinha()",
+      );
       expect(Object.keys(st).sort()).toEqual(["atualizado_em", "configurado"]);
-      await expect(t.q(ANON, "select * from public.acesso_cozinha")).rejects.toMatchObject({ code: "42501" });
+      await expect(t.q(ANON, "select * from public.acesso_cozinha")).rejects.toMatchObject({
+        code: "42501",
+      });
     });
   });
 
@@ -98,10 +112,14 @@ describe("definir_codigo_cozinha (tela Configurações) e admin_status_codigo_co
 
       await expect(definir(t, ANON, "invasor-123")).rejects.toMatchObject({ code: "42501" });
       await expect(definir(t, comum, "invasor-123")).rejects.toMatchObject({ code: "42501" }); // barrado pela RLS
-      await expect(t.q(ANON, "select public.admin_status_codigo_cozinha()")).rejects.toMatchObject({ code: "42501" });
-      await expect(t.q(comum, "select public.admin_status_codigo_cozinha()")).rejects.toMatchObject({
-        message: "Somente o administrador pode fazer isso.",
+      await expect(t.q(ANON, "select public.admin_status_codigo_cozinha()")).rejects.toMatchObject({
+        code: "42501",
       });
+      await expect(t.q(comum, "select public.admin_status_codigo_cozinha()")).rejects.toMatchObject(
+        {
+          message: "Somente o administrador pode fazer isso.",
+        },
+      );
       expect((await acesso(t, "codigo-do-admin")).ok).toBe(true); // nada mudou
       expect(await acesso(t, "invasor-123")).toEqual({ ok: false, motivo: "invalido" });
     });
@@ -111,7 +129,10 @@ describe("definir_codigo_cozinha (tela Configurações) e admin_status_codigo_co
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
       await t.criarPessoa("Ana Souza", "9001");
-      const r = await t.valor<{ ok: boolean; pessoas: { nome: string; nif: string }[] }>(adm, "select public.lista_cozinha(public.hoje_sp(), null)");
+      const r = await t.valor<{ ok: boolean; pessoas: { nome: string; nif: string }[] }>(
+        adm,
+        "select public.lista_cozinha(public.hoje_sp(), null)",
+      );
       expect(r.ok).toBe(true);
       expect(r.pessoas.map((p) => [p.nome, p.nif])).toEqual([["Ana Souza", "9001"]]);
     });
@@ -120,17 +141,21 @@ describe("definir_codigo_cozinha (tela Configurações) e admin_status_codigo_co
 
 describe("configuracoes (tela Configurações)", () => {
   const salvar = (t: Tx, quem: Parameters<Tx["q"]>[0], sets: string, params: unknown[] = []) =>
-    t.q(quem, `update public.configuracoes set ${sets} where id = 1 returning prazo_limite, dias_bloqueados::text[] as dias_bloqueados, aviso_home, nome_unidade`, params);
+    t.q(
+      quem,
+      `update public.configuracoes set ${sets} where id = 1 returning prazo_limite, dias_bloqueados::text[] as dias_bloqueados, aviso_home, nome_unidade`,
+      params,
+    );
 
   it("o admin muda prazo, dias sem almoço, aviso e nome da unidade", async () => {
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
-      const r = await salvar(t, adm, "prazo_limite = $1, dias_bloqueados = $2, aviso_home = $3, nome_unidade = $4", [
-        "10:30",
-        ["2026-11-02", "2026-11-15"],
-        "Sexta não teremos almoço.",
-        "SESI Barra do Turvo",
-      ]);
+      const r = await salvar(
+        t,
+        adm,
+        "prazo_limite = $1, dias_bloqueados = $2, aviso_home = $3, nome_unidade = $4",
+        ["10:30", ["2026-11-02", "2026-11-15"], "Sexta não teremos almoço.", "SESI Barra do Turvo"],
+      );
       expect(r.rows[0]).toMatchObject({
         prazo_limite: "10:30:00",
         dias_bloqueados: ["2026-11-02", "2026-11-15"],
@@ -143,18 +168,28 @@ describe("configuracoes (tela Configurações)", () => {
   it("a linha de configuração é única e não pode ser apagada nem duplicada pelo app", async () => {
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
-      await expect(t.q(adm, "delete from public.configuracoes")).rejects.toMatchObject({ code: "42501" });
-      await expect(t.q(adm, "insert into public.configuracoes (id) values (2)")).rejects.toMatchObject({ code: "42501" });
+      await expect(t.q(adm, "delete from public.configuracoes")).rejects.toMatchObject({
+        code: "42501",
+      });
+      await expect(
+        t.q(adm, "insert into public.configuracoes (id) values (2)"),
+      ).rejects.toMatchObject({ code: "42501" });
     });
   });
 
   it("público e usuário comum leem, mas não alteram (a RLS não deixa nenhuma linha passar)", async () => {
     await banco.tx(async (t) => {
       const comum = await t.criarUsuario();
-      expect((await t.q(ANON, "select prazo_limite from public.configuracoes")).rows).toHaveLength(1);
-      await expect(salvar(t, ANON, "prazo_limite = '23:00'")).rejects.toMatchObject({ code: "42501" });
+      expect((await t.q(ANON, "select prazo_limite from public.configuracoes")).rows).toHaveLength(
+        1,
+      );
+      await expect(salvar(t, ANON, "prazo_limite = '23:00'")).rejects.toMatchObject({
+        code: "42501",
+      });
       expect((await salvar(t, comum, "prazo_limite = '23:00'")).rowCount).toBe(0);
-      expect(await t.valor(DONO, "select prazo_limite::text from public.configuracoes")).toBe("09:00:00");
+      expect(await t.valor(DONO, "select prazo_limite::text from public.configuracoes")).toBe(
+        "09:00:00",
+      );
     });
   });
 
@@ -162,9 +197,13 @@ describe("configuracoes (tela Configurações)", () => {
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
       await expect(salvar(t, adm, "nome_unidade = '   '")).rejects.toMatchObject({ code: "23514" });
-      await expect(salvar(t, adm, "nome_unidade = $1", ["x".repeat(81)])).rejects.toMatchObject({ code: "23514" });
+      await expect(salvar(t, adm, "nome_unidade = $1", ["x".repeat(81)])).rejects.toMatchObject({
+        code: "23514",
+      });
       await expect(salvar(t, adm, "aviso_home = '  '")).rejects.toMatchObject({ code: "23514" });
-      await expect(salvar(t, adm, "aviso_home = $1", ["x".repeat(281)])).rejects.toMatchObject({ code: "23514" });
+      await expect(salvar(t, adm, "aviso_home = $1", ["x".repeat(281)])).rejects.toMatchObject({
+        code: "23514",
+      });
       await salvar(t, adm, "aviso_home = $1, nome_unidade = $2", ["x".repeat(280), "y".repeat(80)]); // limites exatos passam
       await salvar(t, adm, "aviso_home = null"); // limpar o aviso é permitido
     });
@@ -175,7 +214,11 @@ describe("configuracoes (tela Configurações)", () => {
       const adm = await t.criarAdmin();
       const ana = await t.criarPessoa("Ana Souza", "9001");
       const dia = segundaRelativa(await t.hoje(), 3);
-      const marcar = () => t.q(ANON, "select public.salvar_marcacoes($1, $2::jsonb)", [ana, JSON.stringify([{ data: dia, vai: true }])]);
+      const marcar = () =>
+        t.q(ANON, "select public.salvar_marcacoes($1, $2::jsonb)", [
+          ana,
+          JSON.stringify([{ data: dia, vai: true }]),
+        ]);
 
       await marcar(); // antes: aberto
       await salvar(t, adm, "dias_bloqueados = $1", [[dia]]);
@@ -192,11 +235,17 @@ describe("configuracoes (tela Configurações)", () => {
       const dow = (new Date(`${hoje}T00:00:00Z`).getUTCDay() + 6) % 7;
       if (dow > 4) return; // fim de semana: não existe "hoje" útil para testar
       await salvar(t, adm, "prazo_limite = '00:00'");
-      const horaSP = await t.valor<string>(DONO, "select (now() at time zone 'America/Sao_Paulo')::time::text");
+      const horaSP = await t.valor<string>(
+        DONO,
+        "select (now() at time zone 'America/Sao_Paulo')::time::text",
+      );
       if (horaSP <= "00:00:00") return; // (exatamente à meia-noite não há como "já ter passado")
       const ana = await t.criarPessoa("Ana Souza", "9001");
       await expect(
-        t.q(ANON, "select public.salvar_marcacoes($1, $2::jsonb)", [ana, JSON.stringify([{ data: hoje, vai: true }])]),
+        t.q(ANON, "select public.salvar_marcacoes($1, $2::jsonb)", [
+          ana,
+          JSON.stringify([{ data: hoje, vai: true }]),
+        ]),
       ).rejects.toMatchObject({ message: "O prazo para marcar esse dia já encerrou." });
     });
   });
@@ -247,8 +296,18 @@ describe("auditoria de permissões das funções", () => {
 
   it("o público não lê nenhuma tabela com dados pessoais", async () => {
     await banco.tx(async (t) => {
-      for (const tabela of ["pessoas", "marcacoes", "marcacoes_manuais", "acesso_cozinha", "tentativas_cozinha", "admins", "grupos"]) {
-        await expect(t.q(ANON, `select * from public.${tabela}`), tabela).rejects.toMatchObject({ code: "42501" });
+      for (const tabela of [
+        "pessoas",
+        "marcacoes",
+        "marcacoes_manuais",
+        "acesso_cozinha",
+        "tentativas_cozinha",
+        "admins",
+        "grupos",
+      ]) {
+        await expect(t.q(ANON, `select * from public.${tabela}`), tabela).rejects.toMatchObject({
+          code: "42501",
+        });
       }
     });
   });
@@ -257,11 +316,21 @@ describe("auditoria de permissões das funções", () => {
     await banco.tx(async (t) => {
       const comum = await t.criarUsuario();
       await t.criarPessoa("Ana Souza", "9001");
-      for (const tabela of ["pessoas", "marcacoes", "marcacoes_manuais", "acesso_cozinha", "tentativas_cozinha", "grupos"]) {
+      for (const tabela of [
+        "pessoas",
+        "marcacoes",
+        "marcacoes_manuais",
+        "acesso_cozinha",
+        "tentativas_cozinha",
+        "grupos",
+      ]) {
         expect((await t.q(comum, `select * from public.${tabela}`)).rows, tabela).toHaveLength(0);
       }
       // nem a lista da cozinha, sem o código
-      const r = await t.valor<{ ok: boolean }>(comum, "select public.lista_cozinha(public.hoje_sp(), null)");
+      const r = await t.valor<{ ok: boolean }>(
+        comum,
+        "select public.lista_cozinha(public.hoje_sp(), null)",
+      );
       expect(r.ok).toBe(false);
     });
   });
@@ -270,7 +339,9 @@ describe("auditoria de permissões das funções", () => {
     await banco.tx(async (t) => {
       const comum = await t.criarUsuario();
       if (comum.role !== "authenticated") throw new Error("inesperado");
-      await expect(t.q(comum, "insert into public.admins (user_id) values ($1)", [comum.sub])).rejects.toMatchObject({ code: "42501" });
+      await expect(
+        t.q(comum, "insert into public.admins (user_id) values ($1)", [comum.sub]),
+      ).rejects.toMatchObject({ code: "42501" });
       expect(await t.valor<boolean>(comum, "select public.is_admin()")).toBe(false);
       const adm = await t.criarAdmin();
       expect(await t.valor<boolean>(adm, "select public.is_admin()")).toBe(true);
@@ -292,7 +363,10 @@ describe("migrations", () => {
   it("depois de rodar de novo, as funções do painel continuam funcionando", async () => {
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
-      const r = await t.valor<{ ok: boolean }>(adm, "select public.admin_importar_pessoas('[{\"linha\":2,\"nome\":\"Ana\",\"nif\":\"1\"}]'::jsonb)");
+      const r = await t.valor<{ ok: boolean }>(
+        adm,
+        'select public.admin_importar_pessoas(\'[{"linha":2,"nome":"Ana","nif":"1"}]\'::jsonb)',
+      );
       expect(r.ok).toBe(true);
     });
   });

@@ -3,4 +3,6 @@ export interface Refeicao {
   acompanhamento: string;
   sobremesa: string;
   tags: string[];
+  /** Foto do prato (opcional; cadastrada no painel do administrador). */
+  foto?: string | null;
 }

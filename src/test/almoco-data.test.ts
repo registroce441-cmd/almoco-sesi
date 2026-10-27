@@ -58,7 +58,11 @@ describe("lista de almoço (só colaboradores)", () => {
   const linhas = linhasDoDia(pessoas, dia);
 
   it("sem registro = sem marcação; só o dia pedido conta", () => {
-    expect(Object.fromEntries(linhas.map((l) => [l.id, l.status]))).toEqual({ "1": "vai", "2": "sem", "3": "nao" });
+    expect(Object.fromEntries(linhas.map((l) => [l.id, l.status]))).toEqual({
+      "1": "vai",
+      "2": "sem",
+      "3": "nao",
+    });
   });
   it("ordena por nome", () => {
     expect(linhas.map((l) => l.nome)).toEqual(["Ana Paula Souza", "Carla Mendes", "Fábio Martins"]);
@@ -87,16 +91,28 @@ describe("relatório de refeições", () => {
     expect(semanas.reduce((s, x) => s + x.total, 0)).toBe(totalDoPeriodo(dias));
   });
   it("virada de mês fica na semana certa", () => {
-    const s = agruparPorSemana([{ data: "2026-10-30", total: 5 }, { data: "2026-11-02", total: 7 }]);
-    expect(s.map((x) => [x.inicio, x.total])).toEqual([["2026-10-26", 5], ["2026-11-02", 7]]);
+    const s = agruparPorSemana([
+      { data: "2026-10-30", total: 5 },
+      { data: "2026-11-02", total: 7 },
+    ]);
+    expect(s.map((x) => [x.inicio, x.total])).toEqual([
+      ["2026-10-26", 5],
+      ["2026-11-02", 7],
+    ]);
   });
   it("períodos prontos", () => {
     const hoje = new Date(2026, 9, 22); // quinta, 22/10/2026
     expect(periodoPronto("semana", hoje)).toEqual({ inicio: "2026-10-19", fim: "2026-10-25" });
-    expect(periodoPronto("semana-passada", hoje)).toEqual({ inicio: "2026-10-12", fim: "2026-10-18" });
+    expect(periodoPronto("semana-passada", hoje)).toEqual({
+      inicio: "2026-10-12",
+      fim: "2026-10-18",
+    });
     expect(periodoPronto("mes", hoje)).toEqual({ inicio: "2026-10-01", fim: "2026-10-31" });
     expect(periodoPronto("mes-passado", hoje)).toEqual({ inicio: "2026-09-01", fim: "2026-09-30" });
-    expect(periodoPronto("mes-passado", new Date(2026, 0, 10))).toEqual({ inicio: "2025-12-01", fim: "2025-12-31" });
+    expect(periodoPronto("mes-passado", new Date(2026, 0, 10))).toEqual({
+      inicio: "2025-12-01",
+      fim: "2025-12-31",
+    });
   });
   it("formatação de datas", () => {
     expect(formatarData("2026-10-21")).toBe("21/10/2026");

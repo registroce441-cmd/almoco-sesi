@@ -7,7 +7,15 @@ Existe um único grupo interno, "Colaboradores" (não aparece em nenhuma tela).
 Supabase (migrations, RLS e funções), Home, Cardápio e Lista de Almoço ligados ao banco; privacidade por funções;
 código de acesso da cozinha; relatório Excel/PDF de refeições por dia, semana e período.
 
-## Etapa 2 — Painel admin (mesmo design do app)
+## Etapa 2 — Painel admin (mesmo design do app) ✅
+Feita e testada contra Postgres local (74 testes de banco + 50 de tela). **Falta só conferir no Supabase real:** veja
+`docs/checklist-teste-supabase.md`. O que foi decidido na execução:
+- Marcações manuais gravam num **histórico só do admin** (`marcacoes_manuais`), com motivo opcional e sem edição/exclusão.
+- Importação valida **no navegador e no banco** (mesmas regras); linhas repetidas na planilha: a primeira entra.
+- Pessoas: **sem excluir** (desativar preserva o histórico dos relatórios).
+- Duplicar semana **não copia a foto**. Fotos ficam no bucket público `cardapio-fotos` (só o admin escreve).
+- O **aviso da Home** já é salvo nas Configurações, mas só **aparece na Home na Etapa 3** (junto do banner de prazo).
+- O Cardápio público passou a mostrar a foto do prato (cartões sem foto não mudaram).
 - Login por e-mail e senha (Supabase Auth), rota protegida `/admin`, botão sair.
 - **Dashboard:** KPIs (refeições de hoje, previsão da semana, taxa de adesão, pessoas cadastradas);
   **gráfico de refeições por dia** e **total semanal** (Recharts, cores do tema); lista de quem ainda não marcou a semana.

@@ -24,9 +24,7 @@ export const URL_BASE =
 
 /** Quem está "chamando": o público (anon), um usuário logado comum, o admin ou o dono do banco (SQL Editor). */
 export type Papel =
-  | { role: "anon" }
-  | { role: "authenticated"; sub: string }
-  | { role: "postgres" };
+  { role: "anon" } | { role: "authenticated"; sub: string } | { role: "postgres" };
 
 export const ANON: Papel = { role: "anon" };
 export const DONO: Papel = { role: "postgres" };
@@ -87,9 +85,11 @@ export class Tx {
   }
 
   async criarUsuario(email = `u${randomBytes(4).toString("hex")}@teste.local`): Promise<Papel> {
-    const id = await this.valor<string>(DONO, "insert into auth.users (email) values ($1) returning id", [
-      email,
-    ]);
+    const id = await this.valor<string>(
+      DONO,
+      "insert into auth.users (email) values ($1) returning id",
+      [email],
+    );
     return { role: "authenticated", sub: id };
   }
 

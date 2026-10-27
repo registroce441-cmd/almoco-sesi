@@ -42,3 +42,12 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Testes
+
+- `npm test`: testes das telas e da lógica (rápido, não precisa de banco).
+- `npm run test:db`: testes do **banco** (funções, RLS e Storage) rodando as migrations num Postgres local.
+  Precisa de um Postgres 15+ acessível (padrão `postgres://postgres:postgres@localhost:5432/postgres`, ou defina `TEST_DATABASE_URL`).
+  Com Docker: `docker run -d -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:16`.
+  Cada arquivo cria e apaga o próprio banco; nada do seu Postgres é alterado.
+- O que ainda precisa ser conferido no Supabase de verdade está em `docs/checklist-teste-supabase.md`.

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ANON, DONO, criarBancoDeTeste, type BancoDeTeste, type Tx } from "./helpers";
+import casos from "./casos-importacao.json";
 
 let banco: BancoDeTeste;
 beforeAll(async () => {
@@ -129,7 +130,9 @@ describe("admin_importar_pessoas", () => {
         [3, "NIF repetido na planilha"],
         [5, "NIF repetido na planilha"],
       ]);
-      expect(await t.valor(DONO, "select nome from public.pessoas where nif = '1040543'")).toBe("Juliana Alves");
+      expect(await t.valor(DONO, "select nome from public.pessoas where nif = '1040543'")).toBe(
+        "Juliana Alves",
+      );
     });
   });
 
@@ -149,16 +152,24 @@ describe("admin_importar_pessoas", () => {
         { linha: 3, nome: "Natália Ribeiro", nif: "AB-77" },
       ]);
       const nifs = await t.q(DONO, "select nif from public.pessoas order by nif");
-      expect(nifs.rows.map((x) => x.nif)).toEqual(["0012345", "AB-77"]);
+      expect(nifs.rows.map((x) => x["nif"])).toEqual(["0012345", "AB-77"]);
     });
   });
 
   it("recusa mais de 2000 linhas e dados que não são uma lista", async () => {
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
-      const muitas = Array.from({ length: 2001 }, (_, i) => ({ linha: i + 2, nome: `P ${i}`, nif: `${i}` }));
-      await expect(importar(t, adm, muitas)).rejects.toMatchObject({ message: "Importe no máximo 2000 pessoas por vez." });
-      await expect(importar(t, adm, { nome: "x", nif: "1" })).rejects.toMatchObject({ message: "Dados inválidos." });
+      const muitas = Array.from({ length: 2001 }, (_, i) => ({
+        linha: i + 2,
+        nome: `P ${i}`,
+        nif: `${i}`,
+      }));
+      await expect(importar(t, adm, muitas)).rejects.toMatchObject({
+        message: "Importe no máximo 2000 pessoas por vez.",
+      });
+      await expect(importar(t, adm, { nome: "x", nif: "1" })).rejects.toMatchObject({
+        message: "Dados inválidos.",
+      });
       expect(await t.valor<number>(DONO, "select count(*)::int from public.pessoas")).toBe(0);
     });
   });
@@ -166,7 +177,11 @@ describe("admin_importar_pessoas", () => {
   it("aguenta 2000 linhas de uma vez, em poucos segundos", async () => {
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
-      const linhas = Array.from({ length: 2000 }, (_, i) => ({ linha: i + 2, nome: `Pessoa ${i}`, nif: `${5000000 + i}` }));
+      const linhas = Array.from({ length: 2000 }, (_, i) => ({
+        linha: i + 2,
+        nome: `Pessoa ${i}`,
+        nif: `${5000000 + i}`,
+      }));
       const ini = Date.now();
       const r = await importar(t, adm, linhas);
       expect(r.inseridas).toBe(2000);
@@ -179,7 +194,10 @@ describe("admin_importar_pessoas", () => {
       const comum = await t.criarUsuario();
       const lote = [{ linha: 2, nome: "Intruso", nif: "666" }];
       await expect(importar(t, ANON, lote)).rejects.toMatchObject({ code: "42501" });
-      await expect(importar(t, comum, lote)).rejects.toMatchObject({ code: "42501", message: "Somente o administrador pode fazer isso." });
+      await expect(importar(t, comum, lote)).rejects.toMatchObject({
+        code: "42501",
+        message: "Somente o administrador pode fazer isso.",
+      });
       expect(await t.valor<number>(DONO, "select count(*)::int from public.pessoas")).toBe(0);
     });
   });
@@ -188,7 +206,10 @@ describe("admin_importar_pessoas", () => {
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
       await importar(t, adm, [{ linha: 2, nome: "Patrícia Gomes", nif: "1040728" }]);
-      const busca = await t.q(ANON, "select nome, nif_mascarado from public.buscar_pessoas('patricia')");
+      const busca = await t.q(
+        ANON,
+        "select nome, nif_mascarado from public.buscar_pessoas('patricia')",
+      );
       expect(busca.rows).toEqual([{ nome: "Patrícia Gomes", nif_mascarado: "***728" }]);
     });
   });
@@ -197,7 +218,9 @@ describe("admin_importar_pessoas", () => {
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
       await importar(t, adm, [{ linha: 2, nome: "Rafael Barbosa", nif: "1040765" }]);
-      await expect(t.q(ANON, "select * from public.pessoas")).rejects.toMatchObject({ code: "42501" });
+      await expect(t.q(ANON, "select * from public.pessoas")).rejects.toMatchObject({
+        code: "42501",
+      });
     });
   });
 });
@@ -206,10 +229,17 @@ describe("cadastro direto de pessoas pelo admin (usado pela tela Pessoas)", () =
   it("o admin cria, edita e desativa; o grupo vem sozinho", async () => {
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
-      const id = await t.valor<string>(adm, "insert into public.pessoas (nome, nif) values ('Sandra Dias', '1040802') returning id");
+      const id = await t.valor<string>(
+        adm,
+        "insert into public.pessoas (nome, nif) values ('Sandra Dias', '1040802') returning id",
+      );
       await t.q(adm, "update public.pessoas set nome = 'Sandra M. Dias' where id = $1", [id]);
       await t.q(adm, "update public.pessoas set ativo = false where id = $1", [id]);
-      const p = await t.q(DONO, "select nome, ativo, grupo_id is not null as tem_grupo from public.pessoas where id = $1", [id]);
+      const p = await t.q(
+        DONO,
+        "select nome, ativo, grupo_id is not null as tem_grupo from public.pessoas where id = $1",
+        [id],
+      );
       expect(p.rows).toEqual([{ nome: "Sandra M. Dias", ativo: false, tem_grupo: true }]);
     });
   });
@@ -218,7 +248,9 @@ describe("cadastro direto de pessoas pelo admin (usado pela tela Pessoas)", () =
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
       await t.criarPessoa("Thiago Araújo", "1040839");
-      await expect(t.q(adm, "insert into public.pessoas (nome, nif) values ('Outro', '1040839')")).rejects.toMatchObject({
+      await expect(
+        t.q(adm, "insert into public.pessoas (nome, nif) values ('Outro', '1040839')"),
+      ).rejects.toMatchObject({
         code: "23505",
         constraint: "pessoas_nif_key",
       });
@@ -228,8 +260,12 @@ describe("cadastro direto de pessoas pelo admin (usado pela tela Pessoas)", () =
   it("NIF vazio ou com espaço nas pontas é recusado pelo banco (23514)", async () => {
     await banco.tx(async (t) => {
       const adm = await t.criarAdmin();
-      await expect(t.q(adm, "insert into public.pessoas (nome, nif) values ('X', '')")).rejects.toMatchObject({ code: "23514" });
-      await expect(t.q(adm, "insert into public.pessoas (nome, nif) values ('X', ' 123')")).rejects.toMatchObject({ code: "23514" });
+      await expect(
+        t.q(adm, "insert into public.pessoas (nome, nif) values ('X', '')"),
+      ).rejects.toMatchObject({ code: "23514" });
+      await expect(
+        t.q(adm, "insert into public.pessoas (nome, nif) values ('X', ' 123')"),
+      ).rejects.toMatchObject({ code: "23514" });
     });
   });
 
@@ -248,7 +284,32 @@ describe("cadastro direto de pessoas pelo admin (usado pela tela Pessoas)", () =
       await t.criarPessoa("Ativa", "1");
       await t.criarPessoa("Inativa", "2", false);
       expect((await t.q(adm, "select 1 from public.pessoas")).rows).toHaveLength(2);
-      expect((await t.q(ANON, "select * from public.buscar_pessoas('inativa')")).rows).toHaveLength(0);
+      expect((await t.q(ANON, "select * from public.buscar_pessoas('inativa')")).rows).toHaveLength(
+        0,
+      );
+    });
+  });
+});
+
+describe("paridade com o validador do navegador", () => {
+  it("o banco rejeita exatamente as mesmas linhas, pelos mesmos motivos (casos compartilhados)", async () => {
+    await banco.tx(async (t) => {
+      const adm = await t.criarAdmin();
+      for (const [nif, nome] of Object.entries(casos.existentes)) await t.criarPessoa(nome, nif);
+      const r = await importar(
+        t,
+        adm,
+        casos.casos.map((c, i) => ({ linha: i + 2, nome: c.nome, nif: c.nif })),
+      );
+      const porLinha = new Map(r.rejeitadas.map((x) => [x.linha, x.motivo]));
+      casos.casos.forEach((c, i) => {
+        const motivo = porLinha.get(i + 2) ?? null;
+        if (c.esperado === null || c.esperado === "vazia")
+          expect(motivo, `linha ${i + 2}`).toBeNull();
+        else expect(motivo, `linha ${i + 2}`).toMatch(new RegExp(`^${c.esperado}`));
+      });
+      expect(r.vazias).toBe(casos.casos.filter((c) => c.esperado === "vazia").length);
+      expect(r.inseridas).toBe(casos.casos.filter((c) => c.esperado === null).length);
     });
   });
 });

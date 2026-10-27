@@ -18,11 +18,14 @@ Você só precisa fazer isso uma vez. (Os nomes dos menus do painel podem mudar 
    3. `supabase/migrations/20261021000003_seguranca_rls.sql`
    4. `supabase/migrations/20261022000001_escopo_colaboradores.sql`
    5. `supabase/migrations/20261022000002_privacidade.sql`
-   6. `supabase/seed.sql` (30 colaboradores **fictícios** e 4 semanas de cardápio; pode rodar de novo sem duplicar)
+   6. `supabase/migrations/20261025000001_painel_admin.sql` (painel do administrador: marcações manuais, importação, fotos do cardápio)
+   7. `supabase/seed.sql` (30 colaboradores **fictícios** e 4 semanas de cardápio; pode rodar de novo sem duplicar)
 
 Cada arquivo deve terminar com "Success". Se algum der erro, não pule para o próximo: leia a mensagem e corrija antes.
 
-> **Já tinha rodado as migrations 1 a 3 (e o seed antigo, com alunos)?** Rode só a **4** e a **5**.
+> **Já tinha rodado as migrations 1 a 5?** Rode só a **6** (e pode rodá-la de novo sem problema).
+>
+> **Já tinha rodado as migrations 1 a 3 (e o seed antigo, com alunos)?** Rode a **4**, a **5** e a **6**.
 > A 4 apaga o grupo "Robótica", os alunos e as marcações deles, e torna o NIF obrigatório. Se ainda houver
 > algum colaborador sem NIF, ela **para antes de apagar qualquer coisa** e diz quantos faltam: preencha e rode de novo.
 > Depois pode rodar o `seed.sql` novo para incluir os colaboradores de teste.
@@ -61,9 +64,9 @@ select public.definir_codigo_cozinha('troque-por-um-codigo-seu');
 - O código fica guardado só como *hash* (ninguém consegue ler o original, nem pelo painel).
 - **Proteção contra chute:** depois de 10 códigos errados em 5 minutos, o acesso por código fica bloqueado por alguns
   minutos. O administrador logado nunca é bloqueado.
-- Na Etapa 2 você poderá trocar o código pelo painel admin.
+- Também dá para definir/trocar o código **pelo painel** (Administração → Configurações → Código de acesso da cozinha).
 
-## 6. Preparar o login do administrador (para a Etapa 2)
+## 6. Preparar o login do administrador
 
 1. Em **Authentication → Sign In / Providers** (ou **Settings**), **desligue o cadastro público de novos usuários**.
 2. Em **Authentication → Users**, clique em **Add user** e crie o seu usuário (e-mail e senha).
@@ -73,6 +76,13 @@ select public.definir_codigo_cozinha('troque-por-um-codigo-seu');
 insert into public.admins (user_id)
 select id from auth.users where email = 'seu-email@exemplo.com';
 ```
+
+4. Abra `/admin/login` no app (por exemplo `http://localhost:8080/admin/login`) e entre com esse e-mail e senha.
+   O endereço do painel não aparece em nenhuma tela pública: guarde o link.
+
+> Ao criar o usuário em **Add user**, marque **Auto Confirm User**; senão o login pede confirmação por e-mail.
+
+Para testar tudo no Supabase de verdade, siga o `docs/checklist-teste-supabase.md`.
 
 ## Como a privacidade funciona
 
@@ -88,7 +98,7 @@ select id from auth.users where email = 'seu-email@exemplo.com';
 - **NIF:** obrigatório, único e sem espaços nas pontas.
 - As telas se atualizam sozinhas a cada 15 segundos (a Lista e os totais).
 
-Para mudar o prazo ou bloquear um dia antes de existir o painel admin, use o SQL Editor:
+Prazo e dias sem almoço agora se mudam pelo painel (**Configurações**). Se preferir o SQL Editor:
 
 ```sql
 update public.configuracoes set prazo_limite = '10:30';

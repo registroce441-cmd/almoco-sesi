@@ -17,7 +17,13 @@ afterAll(async () => {
   await banco?.destruir();
 });
 
-const marcar = (t: Tx, quem: Parameters<Tx["q"]>[0], pessoa: string, marcas: unknown, motivo?: string | null) =>
+const marcar = (
+  t: Tx,
+  quem: Parameters<Tx["q"]>[0],
+  pessoa: string,
+  marcas: unknown,
+  motivo?: string | null,
+) =>
   t.q<{ r: { ok: boolean; alteradas: number } }>(
     quem,
     "select public.admin_salvar_marcacoes($1, $2::jsonb, $3) as r",
@@ -39,12 +45,25 @@ describe("admin_salvar_marcacoes", () => {
       const r = await marcar(t, adm, ana, [{ data: dia, vai: true }], "  Esqueceu   de marcar ");
       expect(r.rows[0]?.r).toEqual({ ok: true, alteradas: 1 });
 
-      const m = await t.q(DONO, "select vai_almocar from public.marcacoes where pessoa_id = $1 and data = $2", [ana, dia]);
+      const m = await t.q(
+        DONO,
+        "select vai_almocar from public.marcacoes where pessoa_id = $1 and data = $2",
+        [ana, dia],
+      );
       expect(m.rows).toEqual([{ vai_almocar: true }]);
 
-      const log = await t.q(DONO, "select anterior, novo, motivo, admin_id, data::text as data from public.marcacoes_manuais");
+      const log = await t.q(
+        DONO,
+        "select anterior, novo, motivo, admin_id, data::text as data from public.marcacoes_manuais",
+      );
       expect(log.rows).toEqual([
-        { anterior: null, novo: true, motivo: "Esqueceu de marcar", admin_id: (adm as { sub: string }).sub, data: dia },
+        {
+          anterior: null,
+          novo: true,
+          motivo: "Esqueceu de marcar",
+          admin_id: (adm as { sub: string }).sub,
+          data: dia,
+        },
       ]);
     });
   });
@@ -54,7 +73,10 @@ describe("admin_salvar_marcacoes", () => {
       const ana = await t.criarPessoa("Ana Souza", "9001");
       const dia = await diaPassado(t);
       await expect(
-        t.q(ANON, "select public.salvar_marcacoes($1, $2::jsonb)", [ana, JSON.stringify([{ data: dia, vai: true }])]),
+        t.q(ANON, "select public.salvar_marcacoes($1, $2::jsonb)", [
+          ana,
+          JSON.stringify([{ data: dia, vai: true }]),
+        ]),
       ).rejects.toMatchObject({ message: "Esse dia já passou." });
     });
   });
@@ -68,7 +90,10 @@ describe("admin_salvar_marcacoes", () => {
       const r = await marcar(t, adm, ana, [{ data: dia, vai: false }], "Atestado");
       expect(r.rows[0]?.r.alteradas).toBe(1);
 
-      const log = await t.q(DONO, "select anterior, novo, motivo from public.marcacoes_manuais order by criado_em, id");
+      const log = await t.q(
+        DONO,
+        "select anterior, novo, motivo from public.marcacoes_manuais order by criado_em, id",
+      );
       expect(log.rows).toEqual([
         { anterior: null, novo: true, motivo: null },
         { anterior: true, novo: false, motivo: "Atestado" },
@@ -84,9 +109,16 @@ describe("admin_salvar_marcacoes", () => {
       await marcar(t, adm, ana, [{ data: dia, vai: false }]);
       await marcar(t, adm, ana, [{ data: dia, vai: null }], "Marcou sem querer");
 
-      const n = await t.valor<number>(DONO, "select count(*)::int from public.marcacoes where pessoa_id = $1", [ana]);
+      const n = await t.valor<number>(
+        DONO,
+        "select count(*)::int from public.marcacoes where pessoa_id = $1",
+        [ana],
+      );
       expect(n).toBe(0);
-      const ultimo = await t.q(DONO, "select anterior, novo from public.marcacoes_manuais order by criado_em desc, id limit 1");
+      const ultimo = await t.q(
+        DONO,
+        "select anterior, novo from public.marcacoes_manuais order by criado_em desc, id limit 1",
+      );
       expect(ultimo.rows).toEqual([{ anterior: false, novo: null }]);
     });
   });
@@ -119,7 +151,11 @@ describe("admin_salvar_marcacoes", () => {
 
       const motivos = await t.q(DONO, "select distinct motivo from public.marcacoes_manuais");
       expect(motivos.rows).toEqual([{ motivo: "Planilha em papel da portaria" }]);
-      const totais = await t.q(DONO, "select count(*) filter (where vai_almocar)::int as vai, count(*)::int as todas from public.marcacoes where pessoa_id = $1", [ana]);
+      const totais = await t.q(
+        DONO,
+        "select count(*) filter (where vai_almocar)::int as vai, count(*)::int as todas from public.marcacoes where pessoa_id = $1",
+        [ana],
+      );
       expect(totais.rows).toEqual([{ vai: 3, todas: 5 }]);
     });
   });
@@ -132,7 +168,9 @@ describe("admin_salvar_marcacoes", () => {
       await marcar(t, adm, ana, [{ data: dia, vai: true }], "   ");
       expect(await t.valor(DONO, "select motivo from public.marcacoes_manuais")).toBeNull();
 
-      await expect(marcar(t, adm, ana, [{ data: dia, vai: false }], "x".repeat(201))).rejects.toMatchObject({
+      await expect(
+        marcar(t, adm, ana, [{ data: dia, vai: false }], "x".repeat(201)),
+      ).rejects.toMatchObject({
         message: "O motivo pode ter no máximo 200 caracteres.",
       });
       await marcar(t, adm, ana, [{ data: dia, vai: false }], "x".repeat(200)); // no limite, passa
@@ -153,7 +191,9 @@ describe("admin_salvar_marcacoes", () => {
       ).rejects.toMatchObject({ message: "Esse dia não tem almoço (fim de semana)." });
 
       expect(await t.valor<number>(DONO, "select count(*)::int from public.marcacoes")).toBe(0);
-      expect(await t.valor<number>(DONO, "select count(*)::int from public.marcacoes_manuais")).toBe(0);
+      expect(
+        await t.valor<number>(DONO, "select count(*)::int from public.marcacoes_manuais"),
+      ).toBe(0);
     });
   });
 
@@ -166,10 +206,21 @@ describe("admin_salvar_marcacoes", () => {
       await expect(marcar(t, adm, ana, { data: dia, vai: true })).rejects.toMatchObject(invalido); // não é lista
       await expect(marcar(t, adm, ana, [])).rejects.toMatchObject(invalido); // lista vazia
       await expect(marcar(t, adm, ana, [{ data: dia }])).rejects.toMatchObject(invalido); // sem "vai"
-      await expect(marcar(t, adm, ana, [{ data: dia, vai: "true" }])).rejects.toMatchObject(invalido); // texto, não booleano
+      await expect(marcar(t, adm, ana, [{ data: dia, vai: "true" }])).rejects.toMatchObject(
+        invalido,
+      ); // texto, não booleano
       await expect(marcar(t, adm, ana, [{ vai: true }])).rejects.toMatchObject(invalido); // sem data
-      await expect(marcar(t, adm, ana, [{ data: null, vai: true }])).rejects.toMatchObject(invalido);
-      await expect(marcar(t, adm, ana, Array.from({ length: 32 }, () => ({ data: dia, vai: true })))).rejects.toMatchObject(invalido);
+      await expect(marcar(t, adm, ana, [{ data: null, vai: true }])).rejects.toMatchObject(
+        invalido,
+      );
+      await expect(
+        marcar(
+          t,
+          adm,
+          ana,
+          Array.from({ length: 32 }, () => ({ data: dia, vai: true })),
+        ),
+      ).rejects.toMatchObject(invalido);
     });
   });
 
@@ -180,7 +231,9 @@ describe("admin_salvar_marcacoes", () => {
       const dia = await diaPassado(t);
       const msg = { message: "Pessoa não encontrada ou inativa." };
       await expect(marcar(t, adm, inativa, [{ data: dia, vai: true }])).rejects.toMatchObject(msg);
-      await expect(marcar(t, adm, "00000000-0000-0000-0000-000000000000", [{ data: dia, vai: true }])).rejects.toMatchObject(msg);
+      await expect(
+        marcar(t, adm, "00000000-0000-0000-0000-000000000000", [{ data: dia, vai: true }]),
+      ).rejects.toMatchObject(msg);
     });
   });
 
@@ -190,7 +243,9 @@ describe("admin_salvar_marcacoes", () => {
       const dia = await diaPassado(t);
       const comum = await t.criarUsuario(); // logado, mas fora da tabela admins
 
-      await expect(marcar(t, ANON, ana, [{ data: dia, vai: true }])).rejects.toMatchObject({ code: "42501" }); // sem permissão para executar
+      await expect(marcar(t, ANON, ana, [{ data: dia, vai: true }])).rejects.toMatchObject({
+        code: "42501",
+      }); // sem permissão para executar
       await expect(marcar(t, comum, ana, [{ data: dia, vai: true }])).rejects.toMatchObject({
         code: "42501",
         message: "Somente o administrador pode fazer isso.",
@@ -207,7 +262,11 @@ describe("admin_salvar_marcacoes", () => {
       const seg = await diaPassado(t);
       await marcar(t, adm, ana, [{ data: seg, vai: true }]);
       await marcar(t, adm, bia, [{ data: seg, vai: true }]);
-      const totais = await t.q<{ data: string; total: number }>(ANON, "select data::text, total from public.totais_por_dia($1)", [seg]);
+      const totais = await t.q<{ data: string; total: number }>(
+        ANON,
+        "select data::text, total from public.totais_por_dia($1)",
+        [seg],
+      );
       expect(totais.rows[0]).toEqual({ data: seg, total: 2 });
     });
   });
@@ -221,7 +280,9 @@ describe("marcacoes_manuais (o log) é só do admin e só cresce", () => {
       const ana = await t.criarPessoa("Ana Souza", "9001");
       await marcar(t, adm, ana, [{ data: await diaPassado(t), vai: true }], "motivo secreto");
 
-      await expect(t.q(ANON, "select * from public.marcacoes_manuais")).rejects.toMatchObject({ code: "42501" });
+      await expect(t.q(ANON, "select * from public.marcacoes_manuais")).rejects.toMatchObject({
+        code: "42501",
+      });
       const doComum = await t.q(comum, "select * from public.marcacoes_manuais");
       expect(doComum.rows).toHaveLength(0); // RLS esconde tudo
       const doAdmin = await t.q(adm, "select motivo from public.marcacoes_manuais");
@@ -234,7 +295,8 @@ describe("marcacoes_manuais (o log) é só do admin e só cresce", () => {
       const comum = await t.criarUsuario();
       const ana = await t.criarPessoa("Ana Souza", "9001");
       const dia = await diaPassado(t);
-      const ins = "insert into public.marcacoes_manuais (pessoa_id, data, anterior, novo) values ($1, $2, null, true)";
+      const ins =
+        "insert into public.marcacoes_manuais (pessoa_id, data, anterior, novo) values ($1, $2, null, true)";
       await expect(t.q(ANON, ins, [ana, dia])).rejects.toMatchObject({ code: "42501" });
       await expect(t.q(comum, ins, [ana, dia])).rejects.toMatchObject({ code: "42501" }); // viola a policy de RLS
     });
@@ -245,8 +307,12 @@ describe("marcacoes_manuais (o log) é só do admin e só cresce", () => {
       const adm = await t.criarAdmin();
       const ana = await t.criarPessoa("Ana Souza", "9001");
       await marcar(t, adm, ana, [{ data: await diaPassado(t), vai: true }], "original");
-      await expect(t.q(adm, "update public.marcacoes_manuais set motivo = 'adulterado'")).rejects.toMatchObject({ code: "42501" });
-      await expect(t.q(adm, "delete from public.marcacoes_manuais")).rejects.toMatchObject({ code: "42501" });
+      await expect(
+        t.q(adm, "update public.marcacoes_manuais set motivo = 'adulterado'"),
+      ).rejects.toMatchObject({ code: "42501" });
+      await expect(t.q(adm, "delete from public.marcacoes_manuais")).rejects.toMatchObject({
+        code: "42501",
+      });
       expect(await t.valor(DONO, "select motivo from public.marcacoes_manuais")).toBe("original");
     });
   });
@@ -257,7 +323,9 @@ describe("marcacoes_manuais (o log) é só do admin e só cresce", () => {
       const ana = await t.criarPessoa("Ana Souza", "9001");
       await marcar(t, adm, ana, [{ data: await diaPassado(t), vai: true }]);
       await t.q(DONO, "delete from public.pessoas where id = $1", [ana]);
-      expect(await t.valor<number>(DONO, "select count(*)::int from public.marcacoes_manuais")).toBe(0);
+      expect(
+        await t.valor<number>(DONO, "select count(*)::int from public.marcacoes_manuais"),
+      ).toBe(0);
     });
   });
 });
