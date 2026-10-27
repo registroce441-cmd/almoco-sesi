@@ -76,3 +76,31 @@ export function motivoFechado(
   if (dataISO === hoje && hora > regras.prazo_limite) return "encerrado";
   return null;
 }
+
+export type StatusPrazo =
+  | { tipo: "aberto"; prazo: string; faltam: number }
+  | { tipo: "encerrado"; prazo: string }
+  | { tipo: "sem-almoco" }
+  | { tipo: "geral"; prazo: string };
+
+const segundosDoDia = (h: string) => {
+  const [a = 0, b = 0, c = 0] = h.split(":").map(Number);
+  return a * 3600 + b * 60 + c;
+};
+
+/**
+ * Situação do prazo de HOJE (fuso de São Paulo), para o banner da Home.
+ * Usa a mesma regra do banco: depois do horário limite, o dia está encerrado.
+ * `faltam` = minutos até o prazo (arredondado para cima).
+ */
+export function statusDoPrazo(regras: RegrasDePrazo | undefined, agora = new Date()): StatusPrazo | null {
+  if (!regras) return null;
+  const { data, hora } = agoraSP(agora);
+  const prazo = regras.prazo_limite.slice(0, 5);
+  const [y = 0, m = 1, d = 1] = data.split("-").map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  if (dow === 0 || dow === 6) return { tipo: "geral", prazo };
+  if (regras.dias_bloqueados.includes(data)) return { tipo: "sem-almoco" };
+  if (hora > regras.prazo_limite) return { tipo: "encerrado", prazo };
+  return { tipo: "aberto", prazo, faltam: Math.ceil((segundosDoDia(regras.prazo_limite) - segundosDoDia(hora)) / 60) };
+}
