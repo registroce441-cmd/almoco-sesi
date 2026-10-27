@@ -266,6 +266,25 @@ Faça com planilhas **geradas no Excel de verdade** (não só CSV de teste).
 
 ---
 
+## 11b. Etapa 3A: aviso da Home, banner de prazo e PDF do cardápio
+
+| # | Ação | Esperado | OK |
+|---|---|---|---|
+| 11b.1 | Salvar um **aviso** em Configurações e abrir a Home (aba anônima) | O aviso aparece no topo, acima da busca, em até ~1 min (cache de 60 s) | [ ] |
+| 11b.2 | Apagar o aviso e salvar | O cartão do aviso some | [ ] |
+| 11b.3 | Aviso longo (280 caracteres) e com quebra de linha | Quebra bem em 360 px, sem estourar a largura | [ ] |
+| 11b.4 | Home **antes do prazo**, num dia útil | "Marque o almoço de hoje até as HH:MM · faltam X"; vira tom de alerta nos últimos 30 min | [ ] |
+| 11b.5 | Home **depois do prazo** | "O prazo de hoje encerrou às HH:MM…"; marcar hoje continua bloqueado (o banco decide) | [ ] |
+| 11b.6 | Hoje em **dia sem almoço** (Configurações) | "Hoje não haverá almoço." | [ ] |
+| 11b.7 | Sábado ou domingo | "Cada dia pode ser marcado até as HH:MM do próprio dia." | [ ] |
+| 11b.8 | Mudar o prazo em Configurações | O banner passa a mostrar o novo horário (até ~1 min) | [ ] |
+| 11b.9 | Celular com o fuso configurado **fora** do Brasil | O banner segue o horário de **São Paulo**, igual ao banco | [ ] |
+| 11b.10 | Recarregar a Home várias vezes | Sem aviso de "hydration" no console (o relógio só roda no navegador) | [ ] |
+| 11b.11 | Cardápio → **Baixar PDF** (Chrome, Safari iPhone, Android) | Baixa `cardapio_AAAA-MM-DD_a_AAAA-MM-DD.pdf`; acentos corretos; nome da unidade certo | [ ] |
+| 11b.12 | PDF de semana com dias **sem cardápio** e com textos longos | "Cardápio ainda não divulgado" nos vazios; textos quebram sem cortar; segue para a 2ª página se precisar | [ ] |
+| 11b.13 | Botão Baixar PDF numa semana **sem nenhum** cardápio | Desabilitado | [ ] |
+| 11b.14 | Imprimir o PDF em A4 | Cabe numa folha (semana normal) | [ ] |
+
 ## 12. Depois de testar
 
 - [ ] Apagar as pessoas/marcações/cardápio de teste e as fotos do bucket (ou rodar o `seed.sql` num projeto de teste separado).

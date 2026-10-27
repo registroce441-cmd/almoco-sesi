@@ -14,7 +14,7 @@ Feita e testada contra Postgres local (74 testes de banco + 50 de tela). **Falta
 - Importação valida **no navegador e no banco** (mesmas regras); linhas repetidas na planilha: a primeira entra.
 - Pessoas: **sem excluir** (desativar preserva o histórico dos relatórios).
 - Duplicar semana **não copia a foto**. Fotos ficam no bucket público `cardapio-fotos` (só o admin escreve).
-- O **aviso da Home** já é salvo nas Configurações, mas só **aparece na Home na Etapa 3** (junto do banner de prazo).
+- O **aviso da Home** é salvo nas Configurações e passou a aparecer na Home na Etapa 3A, junto do banner de prazo.
 - O Cardápio público passou a mostrar a foto do prato (cartões sem foto não mudaram).
 - Login por e-mail e senha (Supabase Auth), rota protegida `/admin`, botão sair.
 - **Dashboard:** KPIs (refeições de hoje, previsão da semana, taxa de adesão, pessoas cadastradas);
@@ -30,11 +30,12 @@ Feita e testada contra Postgres local (74 testes de banco + 50 de tela). **Falta
 - ~~Gestão de grupos~~ e ~~dashboard por grupo~~: **removidos do plano**.
 
 ## Etapa 3 — Acabamento e portfólio
+**3A ✅:** aviso da Home e banner de prazo, PDF do cardápio, README novo e checklist atualizado.
+Itens abaixo ainda pendentes (3B em diante):
 - Modo demonstração (dados 100% fictícios, sem tocar nos dados reais).
 - Log de auditoria simples (quem, o quê, quando) com aba para o admin.
-- Exportar PDF da lista de almoço (nomes) e do cardápio, com a identidade visual do app.
-  (O PDF do relatório de refeições já existe desde a Etapa 1.)
+- Exportar PDF da lista de almoço (nomes), com a identidade visual do app.
+  (O PDF do relatório existe desde a Etapa 1 e o do cardápio desde a 3A.)
 - PWA instalável (manifest, ícones, service worker básico, instruções para Android e iPhone).
-- Banner de prazo na Home vindo das configurações.
 - Revisão final em 360px, 390px e desktop.
 - README profissional.

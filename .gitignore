@@ -35,3 +35,9 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Cobertura de testes, cache do TypeScript e arquivos temporários do Supabase CLI
+coverage
+*.tsbuildinfo
+supabase/.temp/
+supabase/.branches/
