@@ -90,6 +90,31 @@ describe("service worker: o que entra no cache", () => {
   });
 });
 
+
+describe("service worker em subpasta (GitHub Pages)", () => {
+  const modBase: { exports: { decidir?: (...a: unknown[]) => string } } = { exports: {} };
+  new Function("module", "self", readFileSync("public/sw.js", "utf8"))(modBase, {
+    location: { origin: ORIGEM, pathname: "/almoco/sw.js" },
+    addEventListener() {},
+  });
+  const d = (url: string, modo = "cors") => modBase.exports.decidir!("GET", url, modo, null);
+
+  it("entende o caminho base nas páginas e nos arquivos do app", () => {
+    expect(d(`${ORIGEM}/almoco/`, "navigate")).toBe("pagina");
+    expect(d(`${ORIGEM}/almoco/cardapio`, "navigate")).toBe("pagina");
+    expect(d(`${ORIGEM}/almoco/cardapio/`, "navigate")).toBe("pagina");
+    expect(d(`${ORIGEM}/almoco/assets/index-abc.js`)).toBe("app");
+    expect(d(`${ORIGEM}/almoco/icon-192.png`)).toBe("app");
+  });
+
+  it("Lista e painel continuam sem cache, e o que está fora da subpasta passa direto", () => {
+    for (const p of ["/almoco/lista", "/almoco/admin", "/almoco/admin/login"])
+      expect(d(`${ORIGEM}${p}`, "navigate"), p).toBe("pagina-sem-cache");
+    expect(d(`${ORIGEM}/outro/cardapio`, "navigate")).toBe("rede");
+    expect(d(`${ORIGEM}/assets/x.js`)).toBe("rede");
+  });
+});
+
 // ---------- Manifest e ícones ----------
 const tamanhoPng = (arq: string) => {
   const b = readFileSync(arq);
@@ -101,7 +126,8 @@ describe("manifest", () => {
     expect(m.name).toBe("Almoço SESI");
     expect(m.display).toBe("standalone");
     expect(m.theme_color).toBe("#0B2E6B");
-    expect(m.start_url).toBe("/");
+    expect(m.start_url).toBe("./");
+    expect(m.scope).toBe("./");
   });
   it("tem ícones 192 e 512, com versão maskable, e os arquivos existem com o tamanho declarado", () => {
     const por = (s: string, p: string) =>
@@ -114,16 +140,18 @@ describe("manifest", () => {
     ]) {
       const ic = por(s!, p!);
       expect(ic, `${s} ${p}`).toBeTruthy();
-      const [w, h] = tamanhoPng(`public${ic.src}`);
+      const [w, h] = tamanhoPng(`public/${ic.src}`);
       expect(`${w}x${h}`).toBe(s);
     }
     expect(tamanhoPng("public/apple-touch-icon.png")).toEqual([180, 180]);
   });
-  it("o app aponta para o manifest e o ícone do iPhone", () => {
-    const root = readFileSync("src/routes/__root.tsx", "utf8");
-    expect(root).toContain('href: "/manifest.webmanifest"');
-    expect(root).toContain('href: "/apple-touch-icon.png"');
-    expect(root).toContain('name: "theme-color"');
+  it("o app aponta para o manifest e o ícone do iPhone, respeitando o caminho base", () => {
+    const html = readFileSync("index.html", "utf8");
+    const vite = readFileSync("vite.config.ts", "utf8");
+    expect(html).toContain('name="theme-color"');
+    expect(vite).toContain("${base}manifest.webmanifest");
+    expect(vite).toContain("${base}apple-touch-icon.png");
+    expect(vite).toContain("404.html");
   });
 });
 

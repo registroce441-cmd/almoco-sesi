@@ -11,12 +11,14 @@
  * Mudou algo aqui? Aumente VERSAO para limpar os caches antigos.
  */
 const VERSAO = "v1";
+const RAIZ = ((self.location && self.location.pathname) || "/sw.js").replace(/sw\.js$/, "");
+const CONCHA = RAIZ;
 const CACHE_APP = `almoco-app-${VERSAO}`;
 const CACHE_PAGINAS = `almoco-paginas-${VERSAO}`;
 const CACHE_CARDAPIO = `almoco-cardapio-${VERSAO}`;
 const CACHE_FOTOS = `almoco-fotos-${VERSAO}`;
 const TODOS = [CACHE_APP, CACHE_PAGINAS, CACHE_CARDAPIO, CACHE_FOTOS];
-const PRE_CACHE = ["/offline.html", "/icon-192.png", "/manifest.webmanifest"];
+const PRE_CACHE = [RAIZ + "offline.html", RAIZ + "icon-192.png", RAIZ + "manifest.webmanifest"];
 const PAGINAS_PUBLICAS = ["/", "/cardapio"];
 const ESPERA_REDE_MS = 3500; // internet fraca: depois disso, usa o que já está guardado
 const MAX_FOTOS = 60;
@@ -37,19 +39,26 @@ function ehAnonimo(authorization) {
   }
 }
 
+function caminhoRelativo(pathname) {
+  if (!pathname.startsWith(RAIZ)) return null;
+  return "/" + pathname.slice(RAIZ.length).replace(/\/+$/, "");
+}
+
 /** Decide o que fazer com um pedido. Nada além das regras abaixo passa pelo cache. */
 function decidir(metodo, urlTexto, modo, authorization) {
   if (metodo !== "GET") return "rede";
   const url = new URL(urlTexto);
   const mesmaOrigem = url.origin === self.location.origin;
 
-  if (mesmaOrigem && modo === "navigate") {
-    if (PAGINAS_PUBLICAS.includes(url.pathname)) return "pagina";
-    return "pagina-sem-cache"; // /lista, /admin e o resto: só rede (com página offline de reserva)
-  }
   if (mesmaOrigem) {
-    if (url.pathname.startsWith("/assets/")) return "app";
-    if (/^\/(icon-|apple-touch-icon|favicon|manifest\.webmanifest|offline\.html)/.test(url.pathname)) return "app";
+    const caminho = caminhoRelativo(url.pathname);
+    if (caminho === null) return "rede";
+    if (modo === "navigate") {
+      if (PAGINAS_PUBLICAS.includes(caminho)) return "pagina";
+      return "pagina-sem-cache";
+    }
+    if (caminho.startsWith("/assets/")) return "app";
+    if (/^\/(icon-|apple-touch-icon|favicon|manifest\.webmanifest|offline\.html)/.test(caminho)) return "app";
     return "rede";
   }
   if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") return "fonte";
@@ -76,6 +85,19 @@ async function redePrimeiro(request, nomeCache, ms) {
     return resp;
   } catch {
     const guardado = await cache.match(request, { ignoreVary: true });
+    if (guardado) return guardado;
+    throw new Error("sem rede e sem cópia guardada");
+  }
+}
+
+async function paginaPublica(request) {
+  const cache = await caches.open(CACHE_PAGINAS);
+  try {
+    const resp = await redeComLimite(request, ESPERA_REDE_MS);
+    if (resp.ok && !resp.redirected) await cache.put(CONCHA, resp.clone());
+    return resp;
+  } catch {
+    const guardado = await cache.match(CONCHA);
     if (guardado) return guardado;
     throw new Error("sem rede e sem cópia guardada");
   }
@@ -108,13 +130,15 @@ async function atualizaEmSegundoPlano(request, nomeCache, max) {
   return guardado || (await buscar) || Response.error();
 }
 
-const paginaOffline = () => caches.match("/offline.html");
+const paginaOffline = () => caches.match(RAIZ + "offline.html");
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches
       .open(CACHE_APP)
       .then((c) => c.addAll(PRE_CACHE))
+      .then(() => caches.open(CACHE_PAGINAS))
+      .then((c) => c.add(CONCHA))
       .then(() => self.skipWaiting()),
   );
 });
@@ -132,7 +156,7 @@ self.addEventListener("fetch", (e) => {
   const r = e.request;
   const acao = decidir(r.method, r.url, r.mode, r.headers.get("authorization"));
   if (acao === "rede") return; // não mexe: segue direto para a rede
-  if (acao === "pagina") e.respondWith(redePrimeiro(r, CACHE_PAGINAS, ESPERA_REDE_MS).catch(paginaOffline));
+  if (acao === "pagina") e.respondWith(paginaPublica(r).catch(paginaOffline));
   else if (acao === "pagina-sem-cache") e.respondWith(fetch(r).catch(paginaOffline));
   else if (acao === "app") e.respondWith(cachePrimeiro(r, CACHE_APP));
   else if (acao === "fonte") e.respondWith(atualizaEmSegundoPlano(r, CACHE_APP));

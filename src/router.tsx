@@ -5,17 +5,23 @@ import { routeTree } from "./routeTree.gen";
 export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
-      // Uma nova tentativa para falhas passageiras; depois disso mostramos o aviso de erro.
       queries: { retry: 1 },
     },
   });
 
-  const router = createRouter({
+  const basepath = import.meta.env.BASE_URL.replace(/\/+$/, "") || "/";
+
+  return createRouter({
     routeTree,
+    basepath,
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
   });
-
-  return router;
 };
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof getRouter>;
+  }
+}

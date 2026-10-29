@@ -1,0 +1,73 @@
+name: Publicar no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar
+        run: npm ci
+
+      - name: Testes
+        run: npm test
+
+      - name: Definir caminho base
+        id: base
+        run: |
+          nome="${GITHUB_REPOSITORY#*/}"
+          case "$nome" in
+            *.github.io) echo "caminho=/" >> "$GITHUB_OUTPUT" ;;
+            *) echo "caminho=/$nome/" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Gerar o site
+        run: npm run build
+        env:
+          BASE_PATH: ${{ steps.base.outputs.caminho }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Versionar o service worker
+        run: |
+          sed -i "s/const VERSAO = \"v1\";/const VERSAO = \"${GITHUB_SHA::8}\";/" dist/sw.js
+          grep -q "${GITHUB_SHA::8}" dist/sw.js
+
+      - name: Conferir arquivos
+        run: |
+          test -f dist/index.html
+          test -f dist/404.html
+          test -f dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
