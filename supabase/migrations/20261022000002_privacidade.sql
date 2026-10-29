@@ -60,7 +60,7 @@ begin
   values (1, novo_salt, encode(sha256(convert_to(novo_salt || codigo, 'UTF8')), 'hex'))
   on conflict (id) do update
     set salt = excluded.salt, codigo_hash = excluded.codigo_hash, updated_at = now();
-  delete from public.tentativas_cozinha;
+  delete from public.tentativas_cozinha where id is not null;
 end;
 $$;
 
