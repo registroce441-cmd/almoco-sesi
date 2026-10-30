@@ -1,0 +1,45 @@
+name: Backup mensal para o OneDrive
+
+on:
+  schedule:
+    - cron: "30 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar pg_dump 17 e rclone
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          curl -fsSL https://rclone.org/install.sh | sudo bash
+
+      - name: Gerar o backup
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          data=$(date -u +%Y-%m-%d)
+          mkdir -p saida
+          PG=/usr/lib/postgresql/17/bin/pg_dump
+          "$PG" "$DB_URL" --no-owner -n public | gzip > "saida/almoco-sesi-$data-public.sql.gz"
+          "$PG" "$DB_URL" --no-owner --data-only -t auth.users -t auth.identities | gzip > "saida/almoco-sesi-$data-auth.sql.gz"
+          for f in saida/*.gz; do test "$(stat -c%s "$f")" -gt 300; done
+
+      - name: Enviar para o OneDrive
+        env:
+          RCLONE_CONF: ${{ secrets.RCLONE_CONF }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.config/rclone
+          printf '%s\n' "$RCLONE_CONF" > ~/.config/rclone/rclone.conf
+          rclone copy saida onedrive:Backups/AlmocoSESI
+          rclone delete onedrive:Backups/AlmocoSESI --min-age 400d
+          rclone lsf onedrive:Backups/AlmocoSESI
