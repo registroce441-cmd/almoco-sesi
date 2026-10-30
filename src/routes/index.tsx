@@ -112,8 +112,8 @@ function Index() {
 
         <div className="relative mx-auto max-w-3xl px-4 pb-20 pt-4">
           <div className="flex items-center gap-3 md:hidden">
-            <LogoSesi className="h-10" />
-            <p className="flex-1 text-sm font-semibold tracking-wide opacity-90">Almoço</p>
+            <LogoSesi />
+            <div className="flex-1" />
             <button
               onClick={toggleTema}
               aria-label="Alternar tema"

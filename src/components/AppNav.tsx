@@ -19,8 +19,7 @@ export function AppNav() {
       {/* Desktop: topo */}
       <nav className="sticky top-0 z-40 hidden border-b bg-glass backdrop-blur-xl md:block print:hidden">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-2 px-6">
-          <LogoSesi className="mr-4 h-9" />
-          <p className="mr-auto font-extrabold">Almoço</p>
+          <LogoSesi className="mr-auto" />
           {ITENS.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}

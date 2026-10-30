@@ -23,8 +23,8 @@ export function PageHeader({
       <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-accent/40 blur-3xl animate-blob [animation-delay:-4s]" />
       <div className="relative mx-auto max-w-5xl px-4 pb-16 pt-4 md:px-6 md:pt-8">
         <div className="flex items-center gap-3 md:hidden">
-          <LogoSesi className="h-10" />
-          <p className="flex-1 text-sm font-semibold opacity-90">Almoço</p>
+          <LogoSesi />
+          <div className="flex-1" />
           {acoes}
           <button onClick={toggle} aria-label="Alternar tema" className="grid h-12 w-12 place-items-center rounded-2xl border border-header-foreground/15 bg-header-foreground/10 backdrop-blur">
             {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
