@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { segundaDaSemana, isoData, agoraSP, motivoFechado } from "@/lib/almoco-data";
+import { segundaDaSemana, isoData, agoraSP, motivoFechado, semanaParaMarcar } from "@/lib/almoco-data";
 import {
   agruparPorSemana,
   contagem,
@@ -117,5 +117,23 @@ describe("relatório de refeições", () => {
   it("formatação de datas", () => {
     expect(formatarData("2026-10-21")).toBe("21/10/2026");
     expect(nomeDoDia("2026-10-21")).toBe("Quarta");
+  });
+});
+
+describe("semanaParaMarcar", () => {
+  const regras = { prazo_limite: "09:00:00", dias_bloqueados: [] as string[] };
+
+  it("fica na semana atual enquanto houver dia aberto", () => {
+    const quartaCedo = new Date("2026-10-28T11:00:00Z");
+    expect(isoData(semanaParaMarcar(regras, quartaCedo))).toBe("2026-10-26");
+  });
+
+  it("na sexta depois do prazo passa para a semana seguinte", () => {
+    const sextaTarde = new Date("2026-10-30T16:00:00Z");
+    expect(isoData(semanaParaMarcar(regras, sextaTarde))).toBe("2026-11-02");
+  });
+
+  it("sem regras carregadas mantém a semana atual", () => {
+    expect(isoData(semanaParaMarcar(undefined, new Date("2026-10-30T16:00:00Z")))).toBe("2026-10-26");
   });
 });

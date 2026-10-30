@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { CalendarCheck, ChefHat, UtensilsCrossed, Moon, Sun } from "lucide-react";
 import { useTema } from "@/lib/theme";
+import { LogoSesi } from "@/components/LogoSesi";
 
 const ITENS = [
   { to: "/", label: "Marcar", icon: CalendarCheck },
@@ -18,10 +19,8 @@ export function AppNav() {
       {/* Desktop: topo */}
       <nav className="sticky top-0 z-40 hidden border-b bg-glass backdrop-blur-xl md:block print:hidden">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-2 px-6">
-          <div className="mr-4 grid h-9 w-9 place-items-center rounded-xl border border-dashed text-[9px] font-bold uppercase text-muted-foreground">Logo</div>
-          <p className="mr-auto font-extrabold">
-            Almoço <span className="text-accent">SESI</span>
-          </p>
+          <LogoSesi className="mr-4 h-9" />
+          <p className="mr-auto font-extrabold">Almoço</p>
           {ITENS.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}

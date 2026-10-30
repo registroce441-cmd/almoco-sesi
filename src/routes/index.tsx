@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTema } from "@/lib/theme";
 import { Moon, Sun, Search, X, Check, CalendarCheck, Eraser, ArrowLeft, Sparkles, UtensilsCrossed, ChevronRight } from "lucide-react";
-import { diasDaSemana, isoData, motivoFechado, segundaDaSemana, type Pessoa } from "@/lib/almoco-data";
+import { diasDaSemana, isoData, motivoFechado, semanaParaMarcar, type Pessoa } from "@/lib/almoco-data";
 import { useBuscaPessoas } from "@/hooks/use-busca-pessoas";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import { useMarcacoesDaPessoa, useSalvarMarcacoes } from "@/hooks/use-marcacoes";
@@ -10,6 +10,7 @@ import { mensagemDeErro } from "@/lib/erros";
 import { EstadoErro } from "@/components/EstadoErro";
 import { BannerHome } from "@/components/BannerHome";
 import { InstalarApp } from "@/components/InstalarApp";
+import { LogoSesi } from "@/components/LogoSesi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -32,11 +33,6 @@ const fmt = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: 
 const mesmoDia = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 const VAZIO = [false, false, false, false, false];
 
-function saudacao() {
-  const h = new Date().getHours();
-  return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
-}
-
 function Index() {
   const { dark, toggle: toggleTema } = useTema();
   const [query, setQuery] = useState("");
@@ -47,13 +43,12 @@ function Index() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
   const [hoje, setHoje] = useState<Date | null>(null);
-  const [ola, setOla] = useState("Olá");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const seg = useMemo(() => segundaDaSemana(), []);
+  const config = useConfiguracoes();
+  const seg = useMemo(() => semanaParaMarcar(config.data), [config.data]);
   const dias = useMemo(() => diasDaSemana(seg), [seg]);
   const busca = useBuscaPessoas(query);
-  const config = useConfiguracoes();
   const salvas = useMarcacoesDaPessoa(pessoa?.id, seg);
   const salvar = useSalvarMarcacoes();
   const sugestoes = busca.data ?? [];
@@ -65,7 +60,6 @@ function Index() {
 
   useEffect(() => {
     setHoje(new Date());
-    setOla(saudacao());
   }, []);
 
   // Preenche com o que já está salvo no banco, até a pessoa mexer em algum dia.
@@ -118,12 +112,8 @@ function Index() {
 
         <div className="relative mx-auto max-w-3xl px-4 pb-20 pt-4">
           <div className="flex items-center gap-3 md:hidden">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-dashed border-header-foreground/40 bg-header-foreground/5 text-[10px] font-bold uppercase tracking-wider backdrop-blur">
-              Logo
-            </div>
-            <p className="flex-1 text-sm font-semibold tracking-wide opacity-90">
-              Almoço <span className="text-accent">SESI</span>
-            </p>
+            <LogoSesi className="h-10" />
+            <p className="flex-1 text-sm font-semibold tracking-wide opacity-90">Almoço</p>
             <button
               onClick={toggleTema}
               aria-label="Alternar tema"
@@ -138,7 +128,6 @@ function Index() {
               <Sparkles className="h-3.5 w-3.5 text-accent" /> Semana {fmt(dias[0]!)} – {fmt(dias[4]!)}
             </p>
             <h1 className="mt-3 text-[2rem] font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
-              {ola}! <br />
               <span className="bg-gradient-to-r from-header-foreground to-header-foreground/60 bg-clip-text text-transparent">
                 Vai almoçar com a gente?
               </span>

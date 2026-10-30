@@ -77,6 +77,16 @@ export function motivoFechado(
   return null;
 }
 
+export function semanaParaMarcar(regras: RegrasDePrazo | undefined, agora = new Date()): Date {
+  const seg = segundaDaSemana(agora);
+  if (!regras) return seg;
+  const aberta = diasDaSemana(seg).some((d) => motivoFechado(isoData(d), regras, agora) === null);
+  if (aberta) return seg;
+  const prox = new Date(seg);
+  prox.setDate(seg.getDate() + 7);
+  return prox;
+}
+
 export type StatusPrazo =
   | { tipo: "aberto"; prazo: string; faltam: number }
   | { tipo: "encerrado"; prazo: string }
