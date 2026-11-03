@@ -13,6 +13,7 @@ import {
   UtensilsCrossed,
   Users,
 } from "lucide-react";
+import { LogoSesi } from "@/components/LogoSesi";
 import { PageHeader } from "@/components/PageHeader";
 import { useSairAdmin } from "@/hooks/use-admin";
 import { useTema } from "@/lib/theme";
@@ -51,18 +52,11 @@ export function AdminShell({ email, children }: { email: string; children: React
   return (
     <div className="min-h-dvh-screen bg-background md:pl-64">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r bg-glass backdrop-blur-xl md:flex print:hidden">
-        <div className="flex h-16 items-center gap-3 px-5">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-dashed text-[9px] font-bold uppercase text-muted-foreground">
-            Logo
-          </div>
-          <div className="min-w-0">
-            <p className="font-extrabold leading-none">
-              Almoço <span className="text-accent">SESI</span>
-            </p>
-            <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Administração
-            </p>
-          </div>
+        <div className="flex flex-col items-start gap-2 px-5 py-4">
+          <LogoSesi />
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Administração
+          </p>
         </div>
         <nav
           aria-label="Painel do administrador"
