@@ -25,6 +25,12 @@ export const DIA_VAZIO: DiaCardapio = {
 };
 
 const aparar = (t: string) => t.replace(/\s+/g, " ").trim();
+const apararLinhas = (t: string) =>
+  t
+    .split(/\r?\n/)
+    .map(aparar)
+    .filter(Boolean)
+    .join("\n");
 
 /** Versão limpa do dia (espaços repetidos, tags sem repetição), pronta para comparar e gravar. */
 export function limparDia(d: DiaCardapio): DiaCardapio {
@@ -36,9 +42,9 @@ export function limparDia(d: DiaCardapio): DiaCardapio {
     return true;
   });
   return {
-    prato: aparar(d.prato),
-    acompanhamento: aparar(d.acompanhamento),
-    sobremesa: aparar(d.sobremesa),
+    prato: apararLinhas(d.prato),
+    acompanhamento: apararLinhas(d.acompanhamento),
+    sobremesa: apararLinhas(d.sobremesa),
     tags,
     foto_url: d.foto_url,
   };

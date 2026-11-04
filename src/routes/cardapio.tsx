@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, FileDown, Leaf, Salad, IceCreamCone, Share2, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileDown, Leaf, IceCreamCone, Share2, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { diasDaSemana, isoData, segundaDaSemana } from "@/lib/almoco-data";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
@@ -8,6 +8,8 @@ import { useCardapio } from "@/hooks/use-cardapio";
 import { EstadoErro } from "@/components/EstadoErro";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+
+const itens = (t: string) => t.split("\n").map((l) => l.trim()).filter(Boolean);
 
 export const Route = createFileRoute("/cardapio")({
   head: () => ({
@@ -78,7 +80,13 @@ function Cardapio() {
 
   const compartilhar = () => {
     if (!menu) return;
-    const linhas = menu.flatMap((m, i) => (m ? [`*${NOMES[i]} (${fmt(dias[i]!)})*\n🍽️ ${m.prato}\n🥗 ${m.acompanhamento}\n🍮 ${m.sobremesa}`] : []));
+    const linhas = menu.flatMap((m, i) =>
+      m
+        ? [
+            [`*${NOMES[i]} (${fmt(dias[i]!)})*`, `🍽️ ${itens(m.prato).join(", ")}`, m.acompanhamento && `🌱 Vegana: ${itens(m.acompanhamento).join(", ")}`, m.sobremesa && `🍮 ${m.sobremesa}`].filter(Boolean).join("\n"),
+          ]
+        : [],
+    );
     if (linhas.length === 0) return;
     const texto = `*Cardápio SESI — ${fmt(dias[0]!)} a ${fmt(dias[4]!)}*\n\n${linhas.join("\n\n")}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank");
@@ -156,10 +164,19 @@ function Cardapio() {
                   </p>
                 ) : (
                   <>
-                    <h3 className="relative mt-4 text-xl font-bold leading-snug lg:text-lg">{m.prato}</h3>
-                    {m.foto && <img src={m.foto} alt={`Foto do prato: ${m.prato}`} loading="lazy" className="relative mt-3 aspect-video w-full rounded-2xl object-cover" />}
+                    <ul className="relative mt-4 space-y-1 text-lg font-bold leading-snug lg:text-base">
+                      {itens(m.prato).map((l, k) => <li key={k}>{l}</li>)}
+                    </ul>
+                    {m.foto && <img src={m.foto} alt={`Foto do prato: ${itens(m.prato)[0]}`} loading="lazy" className="relative mt-3 aspect-video w-full rounded-2xl object-cover" />}
+                    {m.acompanhamento && (
+                      <div className={cn("relative mt-3 rounded-2xl border px-3 py-2.5", isHoje ? "border-white/25 bg-white/10" : "border-primary/25 bg-primary/5")}>
+                        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide"><Leaf className="h-3.5 w-3.5" /> Opção vegana</p>
+                        <ul className="mt-1 space-y-0.5 text-sm font-semibold leading-snug">
+                          {itens(m.acompanhamento).map((l, k) => <li key={k}>{l}</li>)}
+                        </ul>
+                      </div>
+                    )}
                     <ul className={cn("relative mt-3 space-y-2 text-sm", isHoje ? "opacity-90" : "text-muted-foreground")}>
-                      {m.acompanhamento && <li className="flex gap-2"><Salad className="mt-0.5 h-4 w-4 shrink-0" /> {m.acompanhamento}</li>}
                       {m.sobremesa && <li className="flex gap-2"><IceCreamCone className="mt-0.5 h-4 w-4 shrink-0" /> {m.sobremesa}</li>}
                     </ul>
                   </>

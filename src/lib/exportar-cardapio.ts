@@ -43,7 +43,7 @@ export async function montarPdfCardapio(dias: DiaDoCardapio[], meta: MetaCardapi
         texto: doc
           .setFont("helvetica", "bold")
           .setFontSize(13)
-          .splitTextToSize(r.prato, larguraTexto),
+          .splitTextToSize(r.prato.split("\n").filter(Boolean).join(", "), larguraTexto),
         estilo: "forte",
       });
       if (r.acompanhamento)
@@ -51,7 +51,7 @@ export async function montarPdfCardapio(dias: DiaDoCardapio[], meta: MetaCardapi
           texto: doc
             .setFont("helvetica", "normal")
             .setFontSize(10.5)
-            .splitTextToSize(`Acompanhamento: ${r.acompanhamento}`, larguraTexto),
+            .splitTextToSize(`Opção vegana: ${r.acompanhamento.split("\n").filter(Boolean).join(", ")}`, larguraTexto),
           estilo: "normal",
         });
       if (r.sobremesa)

@@ -101,32 +101,43 @@ export function DiaEditor({
       </header>
 
       <div className="mt-3 space-y-2.5">
-        <input
+        <label className="block text-xs font-semibold text-muted-foreground" htmlFor={`${id}-prato`}>
+          Almoço (um item por linha)
+        </label>
+        <textarea
           id={`${id}-prato`}
           value={dia.prato}
           onChange={(e) => onChange({ prato: e.target.value })}
-          maxLength={120}
-          placeholder="Prato principal"
-          aria-label={`Prato principal de ${nome}`}
+          maxLength={600}
+          rows={Math.max(5, dia.prato.split("\n").length + 1)}
+          placeholder={"Arroz Branco\nFeijão Carioca\nProteína do dia\nSalada"}
+          aria-label={`Almoço de ${nome}`}
           aria-invalid={Boolean(erro)}
-          className={cn(CLASSE_CAMPO, erro && "border-accent")}
+          className={cn(CLASSE_CAMPO, "rounded-2xl py-3 leading-snug", erro && "border-accent")}
         />
-        <input
-          value={dia.acompanhamento}
-          onChange={(e) => onChange({ acompanhamento: e.target.value })}
-          maxLength={120}
-          placeholder="Acompanhamento"
-          aria-label={`Acompanhamento de ${nome}`}
-          className={CLASSE_CAMPO}
-        />
-        <input
-          value={dia.sobremesa}
-          onChange={(e) => onChange({ sobremesa: e.target.value })}
-          maxLength={120}
-          placeholder="Sobremesa"
-          aria-label={`Sobremesa de ${nome}`}
-          className={CLASSE_CAMPO}
-        />
+        <label className="block text-xs font-semibold text-muted-foreground">
+          Opção vegana (um item por linha)
+          <textarea
+            value={dia.acompanhamento}
+            onChange={(e) => onChange({ acompanhamento: e.target.value })}
+            maxLength={400}
+            rows={Math.max(3, dia.acompanhamento.split("\n").length + 1)}
+            placeholder={"Prato vegano do dia"}
+            aria-label={`Opção vegana de ${nome}`}
+            className={cn(CLASSE_CAMPO, "mt-1 rounded-2xl py-3 font-normal leading-snug text-foreground")}
+          />
+        </label>
+        <label className="block text-xs font-semibold text-muted-foreground">
+          Sobremesa
+          <input
+            value={dia.sobremesa}
+            onChange={(e) => onChange({ sobremesa: e.target.value })}
+            maxLength={120}
+            placeholder="Sobremesa"
+            aria-label={`Sobremesa de ${nome}`}
+            className={cn(CLASSE_CAMPO, "mt-1 font-normal text-foreground")}
+          />
+        </label>
         {erro && (
           <p role="alert" className="text-sm font-semibold text-accent">
             {erro}
