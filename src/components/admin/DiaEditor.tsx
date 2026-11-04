@@ -101,32 +101,22 @@ export function DiaEditor({
       </header>
 
       <div className="mt-3 space-y-2.5">
-        <label className="block text-xs font-semibold text-muted-foreground" htmlFor={`${id}-prato`}>
-          Almoço (um item por linha)
-        </label>
-        <textarea
-          id={`${id}-prato`}
-          value={dia.prato}
-          onChange={(e) => onChange({ prato: e.target.value })}
-          maxLength={600}
-          rows={Math.max(5, dia.prato.split("\n").length + 1)}
-          placeholder={"Arroz Branco\nFeijão Carioca\nProteína do dia\nSalada"}
-          aria-label={`Almoço de ${nome}`}
-          aria-invalid={Boolean(erro)}
-          className={cn(CLASSE_CAMPO, "rounded-2xl py-3 leading-snug", erro && "border-accent")}
+        <ListaItens
+          titulo="Almoço"
+          itens={dia.prato}
+          onChange={(v) => onChange({ prato: v })}
+          idPrimeiro={`${id}-prato`}
+          placeholder="Ex.: Arroz Branco"
+          rotuloAria={`Item do almoço de ${nome}`}
+          erro={Boolean(erro)}
         />
-        <label className="block text-xs font-semibold text-muted-foreground">
-          Opção vegana (um item por linha)
-          <textarea
-            value={dia.acompanhamento}
-            onChange={(e) => onChange({ acompanhamento: e.target.value })}
-            maxLength={400}
-            rows={Math.max(3, dia.acompanhamento.split("\n").length + 1)}
-            placeholder={"Prato vegano do dia"}
-            aria-label={`Opção vegana de ${nome}`}
-            className={cn(CLASSE_CAMPO, "mt-1 rounded-2xl py-3 font-normal leading-snug text-foreground")}
-          />
-        </label>
+        <ListaItens
+          titulo="Opção vegana"
+          itens={dia.acompanhamento}
+          onChange={(v) => onChange({ acompanhamento: v })}
+          placeholder="Ex.: Escondidinho de lentilha"
+          rotuloAria={`Item da opção vegana de ${nome}`}
+        />
         <label className="block text-xs font-semibold text-muted-foreground">
           Sobremesa
           <input
@@ -289,5 +279,75 @@ export function DiaEditor({
         <Eraser className="h-4 w-4" /> Limpar o dia (sem cardápio)
       </button>
     </section>
+  );
+}
+
+function ListaItens({
+  titulo,
+  itens,
+  onChange,
+  placeholder,
+  rotuloAria,
+  idPrimeiro,
+  erro,
+}: {
+  titulo: string;
+  itens: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  rotuloAria: string;
+  idPrimeiro?: string;
+  erro?: boolean;
+}) {
+  const lista = itens.split("\n");
+  const [foco, setFoco] = useState<number | null>(null);
+  const trocar = (i: number, v: string) => onChange(lista.map((l, k) => (k === i ? v : l)).join("\n"));
+  const remover = (i: number) => onChange(lista.filter((_, k) => k !== i).join("\n"));
+  const adicionar = () => {
+    setFoco(lista.length);
+    onChange([...lista, ""].join("\n"));
+  };
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-muted-foreground">{titulo}</p>
+      {lista.map((l, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input
+            id={i === 0 ? idPrimeiro : undefined}
+            value={l}
+            autoFocus={i === foco}
+            onChange={(e) => trocar(i, e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (l.trim()) adicionar();
+              }
+            }}
+            maxLength={120}
+            placeholder={placeholder}
+            aria-label={`${rotuloAria} ${i + 1}`}
+            aria-invalid={i === 0 ? erro : undefined}
+            className={cn(CLASSE_CAMPO, i === 0 && erro && "border-accent")}
+          />
+          {lista.length > 1 && (
+            <button
+              type="button"
+              onClick={() => remover(i)}
+              aria-label={`Remover ${rotuloAria} ${i + 1}`}
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border bg-card text-muted-foreground transition hover:bg-muted active:scale-95"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={adicionar}
+        className="inline-flex h-10 items-center gap-1.5 rounded-full border bg-card px-4 text-sm font-semibold transition hover:bg-muted active:scale-95"
+      >
+        <Plus className="h-4 w-4" /> Adicionar item
+      </button>
+    </div>
   );
 }
