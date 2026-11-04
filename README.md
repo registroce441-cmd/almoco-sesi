@@ -24,9 +24,10 @@ O sistema roda **100% em planos gratuitos**:
 
 | Peça | O que é | Onde fica |
 |---|---|---|
-| **Site** | O aplicativo que as pessoas abrem | GitHub Pages (publicado a partir da branch `main`) |
+| **Site** | O aplicativo que as pessoas abrem | GitHub Pages (workflow **Publicar no GitHub Pages**, a cada push na `main`) |
 | **Banco, login e fotos** | Dados, regras de segurança, login do admin e fotos do cardápio | Supabase (plano Free, região São Paulo) |
-| **Despertador** | Tarefa diária que consulta o banco para ele não pausar | GitHub Actions (aba **Actions**) |
+| **Despertador** | Tarefa diária que consulta o banco para ele não pausar | Workflow **Despertador do banco** |
+| **Backup** | Cópia mensal dos dados para o Google Drive | Workflow **Backup mensal para o Google Drive** |
 
 ## Tecnologias
 
@@ -82,7 +83,7 @@ Tudo é feito pelo painel em `/admin/login`:
 
 Confira nesta ordem:
 
-1. **O site não abre:** veja a última execução em **Actions → Deploy**.
+1. **O site não abre:** em **Actions**, veja a última execução de **Publicar no GitHub Pages**. Se falhou, abra a execução e leia o erro.
 2. **O site abre, mas não carrega dados:** o banco provavelmente **pausou** (o plano Free pausa após cerca de 7 dias sem uso). No Supabase, clique em **Restore project**. Os dados não são apagados.
 3. **Aviso de "Supabase não configurado":** faltam `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` na publicação.
 4. **Erro `permission denied` (42501):** falta permissão em alguma tabela ou função; revise `supabase/migrations/`.
@@ -91,20 +92,21 @@ Confira nesta ordem:
 
 ## Despertador (evita a pausa do banco)
 
-Uma tarefa diária do GitHub Actions (`.github/workflows/`) faz uma consulta real ao banco, usando a chave anon guardada em **Settings → Secrets and variables → Actions** (`SUPABASE_URL` e `SUPABASE_ANON_KEY`).
+O workflow **Despertador do banco** (`.github/workflows/despertador.yml`) faz uma consulta real ao banco todo dia, usando a chave anon guardada em **Settings → Secrets and variables → Actions**.
 
-- **Como conferir:** aba **Actions**, execução diária em verde.
-- **Se parar:** o GitHub desativa tarefas agendadas após cerca de 60 dias sem atividade no repositório. Em Actions, selecione a tarefa e clique em **Enable workflow** e depois **Run workflow**.
+- **Como conferir:** aba **Actions → Despertador do banco**, execução diária em verde.
+- **Se parar:** o GitHub desativa tarefas agendadas após cerca de 60 dias sem atividade no repositório. Selecione o workflow e clique em **Enable workflow** e depois **Run workflow**.
 - **Outras causas:** chave trocada sem atualizar o secret, ou repositório movido ou apagado.
 
-## Backup mensal (obrigatório)
+## Backup mensal (automático)
 
-O plano gratuito **não tem backup automático**. Todo mês:
+O plano gratuito do Supabase **não tem backup automático**, então o workflow **Backup mensal para o Google Drive** (`.github/workflows/backup-mensal.yml`) copia os dados para o Drive do setor **todo dia 1º do mês**.
 
-1. No painel, exporte **Pessoas** e o **Relatório** do mês.
-2. No Supabase → **Table Editor**, exporte `cardapio` e `configuracoes` (CSV).
-3. Salve no **OneDrive do SESI** (`Almoço\Backup\AAAA-MM`) e faça uma cópia reserva no Drive do setor.
-4. **Nunca envie por e-mail:** os arquivos têm nomes e NIFs (LGPD).
+- **Como conferir:** aba **Actions → Backup mensal para o Google Drive**. A última execução deve estar em verde, e a pasta do Drive deve ter o arquivo do mês.
+- **Rodar na hora:** abra o workflow, clique em **Run workflow** e escolha a branch `main`.
+- **Se falhar:** abra a execução com o ícone vermelho e leia o erro. As causas mais comuns são credencial do Google expirada ou removida, pasta do Drive sem permissão ou secret do Supabase trocado. Atualize em **Settings → Secrets and variables → Actions** e rode de novo.
+- **Verificação periódica:** uma vez por trimestre, abra um arquivo do backup e confira se os dados estão completos.
+- **Nunca envie o backup por e-mail:** ele tem nomes e NIFs (LGPD). Compartilhe a pasta do Drive só com os donos do sistema.
 
 ## Acessos e continuidade
 
@@ -134,6 +136,7 @@ src/hooks/         acesso aos dados (React Query + Supabase)
 src/lib/           regras puras: prazo, planilhas, PDFs, mensagens de erro
 supabase/          migrations, seed e testes do banco
 docs/              guia do Supabase, plano das etapas e checklist de testes
+.github/workflows/ publicação, despertador do banco e backup mensal
 ```
 
 ## Documentação
@@ -141,4 +144,3 @@ docs/              guia do Supabase, plano das etapas e checklist de testes
 - [`docs/configurar-supabase.md`](docs/configurar-supabase.md): configuração do projeto, código da cozinha e login do admin
 - [`docs/checklist-teste-supabase.md`](docs/checklist-teste-supabase.md): o que conferir no Supabase real
 - [`docs/plano-etapas.md`](docs/plano-etapas.md): etapas do projeto
-- [`docs/MANUTENCAO.md`](docs/MANUTENCAO.md): guia completo de operação para quem assumir o sistema
