@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTema } from "@/lib/theme";
-import { Moon, Sun, Search, X, Check, CalendarCheck, Eraser, ArrowLeft, Sparkles, UtensilsCrossed, ChevronRight } from "lucide-react";
+import { Moon, Sun, Search, X, Check, CalendarCheck, Eraser, ArrowLeft, Sparkles, UtensilsCrossed, ChevronRight, ChevronLeft } from "lucide-react";
 import { diasDaSemana, isoData, motivoFechado, semanaParaMarcar, type Pessoa } from "@/lib/almoco-data";
 import { useBuscaPessoas } from "@/hooks/use-busca-pessoas";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
@@ -46,7 +46,13 @@ function Index() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const config = useConfiguracoes();
-  const seg = useMemo(() => semanaParaMarcar(config.data), [config.data]);
+  const [offset, setOffset] = useState(0);
+  const base = useMemo(() => semanaParaMarcar(config.data), [config.data]);
+  const seg = useMemo(() => {
+    const s = new Date(base);
+    s.setDate(s.getDate() + offset * 7);
+    return s;
+  }, [base, offset]);
   const dias = useMemo(() => diasDaSemana(seg), [seg]);
   const busca = useBuscaPessoas(query);
   const salvas = useMarcacoesDaPessoa(pessoa?.id, seg);
@@ -72,6 +78,14 @@ function Index() {
     setAviso(null);
     salvar.reset();
     setMarcas(fn);
+  };
+
+  const mudarSemana = (delta: number) => {
+    setOffset((o) => Math.min(8, Math.max(-1, o + delta)));
+    setMarcas(VAZIO);
+    setEditado(false);
+    setAviso(null);
+    salvar.reset();
   };
 
   const escolher = (p: Pessoa) => {
@@ -124,9 +138,29 @@ function Index() {
           </div>
 
           <div className="mt-8 animate-rise md:mt-4">
-            <p className="inline-flex items-center gap-1.5 rounded-full bg-header-foreground/10 px-3 py-1 text-xs font-medium backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5 text-accent" /> Semana {fmt(dias[0]!)} – {fmt(dias[4]!)}
-            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => mudarSemana(-1)}
+                disabled={offset <= -1}
+                aria-label="Semana anterior"
+                className="grid h-10 w-10 place-items-center rounded-2xl border border-header-foreground/15 bg-header-foreground/10 backdrop-blur transition active:scale-95 disabled:opacity-40"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <p className="inline-flex h-10 items-center gap-1.5 rounded-full bg-header-foreground/10 px-4 text-xs font-medium backdrop-blur">
+                <Sparkles className="h-3.5 w-3.5 text-accent" /> Semana {fmt(dias[0]!)} – {fmt(dias[4]!)}
+              </p>
+              <button
+                type="button"
+                onClick={() => mudarSemana(1)}
+                disabled={offset >= 8}
+                aria-label="Próxima semana"
+                className="grid h-10 w-10 place-items-center rounded-2xl border border-header-foreground/15 bg-header-foreground/10 backdrop-blur transition active:scale-95 disabled:opacity-40"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
             <h1 className="mt-3 text-[2rem] font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-r from-header-foreground to-header-foreground/60 bg-clip-text text-transparent">
                 Vai almoçar com a gente?
@@ -259,6 +293,11 @@ function Index() {
                 </button>
               </div>
 
+              {fechados.every((f) => f === "encerrado") && (
+                <p className="mt-4 rounded-2xl bg-muted px-4 py-3 text-sm font-medium">
+                  O prazo dessa semana já encerrou (era até terça). Use as setas lá em cima para marcar outra semana.
+                </p>
+              )}
               {salvas.isError && <EstadoErro erro={salvas.error} onTentar={() => salvas.refetch()} />}
               {carregandoMarcas && (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5" aria-busy="true" aria-label="Carregando suas marcações">

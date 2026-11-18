@@ -64,6 +64,13 @@ export interface RegrasDePrazo {
  * Por que o dia não aceita marcação do público (ou `null` se aceita).
  * É só para a interface desabilitar o dia: quem decide de verdade é o banco.
  */
+export function tercaDaSemana(dataISO: string): string {
+  const seg = segundaDaSemana(new Date(`${dataISO}T12:00:00`));
+  const ter = new Date(seg);
+  ter.setDate(seg.getDate() + 1);
+  return isoData(ter);
+}
+
 export function motivoFechado(
   dataISO: string,
   regras: RegrasDePrazo | undefined,
@@ -73,7 +80,8 @@ export function motivoFechado(
   if (regras.dias_bloqueados.includes(dataISO)) return "sem-almoco";
   const { data: hoje, hora } = agoraSP(agora);
   if (dataISO < hoje) return "encerrado";
-  if (dataISO === hoje && hora > regras.prazo_limite) return "encerrado";
+  const terca = tercaDaSemana(dataISO);
+  if (hoje > terca || (hoje === terca && hora > regras.prazo_limite)) return "encerrado";
   return null;
 }
 
@@ -111,6 +119,12 @@ export function statusDoPrazo(regras: RegrasDePrazo | undefined, agora = new Dat
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   if (dow === 0 || dow === 6) return { tipo: "geral", prazo };
   if (regras.dias_bloqueados.includes(data)) return { tipo: "sem-almoco" };
-  if (hora > regras.prazo_limite) return { tipo: "encerrado", prazo };
-  return { tipo: "aberto", prazo, faltam: Math.ceil((segundosDoDia(regras.prazo_limite) - segundosDoDia(hora)) / 60) };
+  const terca = tercaDaSemana(data);
+  if (data > terca || (data === terca && hora > regras.prazo_limite)) return { tipo: "encerrado", prazo };
+  const diasAte = data === terca ? 0 : 1;
+  return {
+    tipo: "aberto",
+    prazo,
+    faltam: diasAte * 1440 + Math.ceil((segundosDoDia(regras.prazo_limite) - segundosDoDia(hora)) / 60),
+  };
 }

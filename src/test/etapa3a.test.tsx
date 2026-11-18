@@ -5,28 +5,28 @@ import { montarPdfCardapio } from "@/lib/exportar-cardapio";
 import { BannerHome } from "@/components/BannerHome";
 
 const regras = { prazo_limite: "09:00:00", dias_bloqueados: ["2026-10-28"] };
-// São Paulo = UTC-3: 11:00Z = 08:00 em SP. 2026-10-26 é segunda-feira.
+// São Paulo = UTC-3: 11:00Z = 08:00 em SP. 2026-10-27 é terça-feira.
 const sp = (iso: string, hhmmss: string) => new Date(`${iso}T${hhmmss}-03:00`);
 
 describe("statusDoPrazo (banner da Home)", () => {
   it("antes do prazo: aberto, com os minutos que faltam", () => {
-    expect(statusDoPrazo(regras, sp("2026-10-26", "08:00:00"))).toEqual({
+    expect(statusDoPrazo(regras, sp("2026-10-27", "08:00:00"))).toEqual({
       tipo: "aberto",
       prazo: "09:00",
       faltam: 60,
     });
-    expect(statusDoPrazo(regras, sp("2026-10-26", "08:59:10"))).toEqual({
+    expect(statusDoPrazo(regras, sp("2026-10-27", "08:59:10"))).toEqual({
       tipo: "aberto",
       prazo: "09:00",
       faltam: 1,
     });
   });
   it("exatamente no horário ainda vale (mesma regra do banco); um segundo depois, encerrado", () => {
-    expect(statusDoPrazo(regras, sp("2026-10-26", "09:00:00"))).toMatchObject({
+    expect(statusDoPrazo(regras, sp("2026-10-27", "09:00:00"))).toMatchObject({
       tipo: "aberto",
       faltam: 0,
     });
-    expect(statusDoPrazo(regras, sp("2026-10-26", "09:00:01"))).toEqual({
+    expect(statusDoPrazo(regras, sp("2026-10-27", "09:00:01"))).toEqual({
       tipo: "encerrado",
       prazo: "09:00",
     });
@@ -42,7 +42,7 @@ describe("statusDoPrazo (banner da Home)", () => {
   });
   it("usa o fuso de São Paulo, não o do aparelho", () => {
     // 11:30Z = 08:30 em SP (ainda aberto), mesmo que em UTC já fosse depois das 09:00
-    expect(statusDoPrazo(regras, new Date("2026-10-26T11:30:00Z"))).toMatchObject({
+    expect(statusDoPrazo(regras, new Date("2026-10-27T11:30:00Z"))).toMatchObject({
       tipo: "aberto",
       faltam: 30,
     });
@@ -68,7 +68,7 @@ describe("PDF do cardápio", () => {
   const meta = {
     unidade: "SESI",
     periodo: "26/10 a 30/10",
-    inicio: "2026-10-26",
+    inicio: "2026-10-27",
     fim: "2026-10-30",
   };
   const dia = (nome: string, refeicao: Parameters<typeof montarPdfCardapio>[0][0]["refeicao"]) => ({

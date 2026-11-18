@@ -57,18 +57,18 @@ export function BannerHome({ config }: { config: Config }) {
           <p>
             {prazo.tipo === "aberto" && (
               <>
-                Marque o almoço de hoje até as {prazo.prazo} · faltam {duracao(prazo.faltam)}
+                Marque a semana toda até terça às {prazo.prazo} · faltam {duracao(prazo.faltam)}
               </>
             )}
             {prazo.tipo === "encerrado" && (
               <>
-                O prazo de hoje encerrou às {prazo.prazo}. Para mudar o de hoje, fale com a
-                administração.
+                O prazo desta semana encerrou na terça às {prazo.prazo}. Para mudar, fale com a
+                administração. A próxima semana já está aberta.
               </>
             )}
             {prazo.tipo === "sem-almoco" && <>Hoje não haverá almoço.</>}
             {prazo.tipo === "geral" && (
-              <>Cada dia pode ser marcado até as {prazo.prazo} do próprio dia.</>
+              <>A semana pode ser marcada até terça às {prazo.prazo}.</>
             )}
           </p>
         </div>

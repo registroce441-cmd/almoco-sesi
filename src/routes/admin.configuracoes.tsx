@@ -168,9 +168,9 @@ function Formulario({ inicial }: { inicial: Form }) {
       <Cartao
         icone={<Clock className="h-5 w-5" />}
         titulo="Prazo para marcar"
-        descricao="Horário limite, no próprio dia do almoço (horário de Brasília). Depois dele, só o administrador altera."
+        descricao="Toda semana o prazo é na terça-feira, neste horário (horário de Brasília). Depois dele, a semana fica fechada e só o administrador altera."
       >
-        <Rotulo htmlFor="cfg-prazo">Horário limite</Rotulo>
+        <Rotulo htmlFor="cfg-prazo">Horário limite na terça-feira</Rotulo>
         <input
           id="cfg-prazo"
           type="time"

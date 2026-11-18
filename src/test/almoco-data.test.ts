@@ -35,13 +35,19 @@ describe("prazo (America/Sao_Paulo)", () => {
   it("dia passado está encerrado", () => {
     expect(motivoFechado("2026-10-20", regras, agora)).toBe("encerrado");
   });
-  it("hoje: aberto até o prazo, encerrado depois", () => {
-    expect(motivoFechado("2026-10-21", regras, agora)).toBeNull();
-    expect(motivoFechado("2026-10-21", regras, new Date("2026-10-21T12:00:01Z"))).toBe("encerrado");
+  it("segunda-feira: a semana inteira está aberta até a terça", () => {
+    const segunda = new Date("2026-10-26T12:00:00Z");
+    expect(motivoFechado("2026-10-26", regras, segunda)).toBeNull();
+    expect(motivoFechado("2026-10-29", regras, segunda)).toBeNull();
+    expect(motivoFechado("2026-10-30", { ...regras, dias_bloqueados: ["2026-10-30"] }, segunda)).toBe("sem-almoco");
   });
-  it("dia futuro fica aberto, exceto se estiver bloqueado", () => {
-    expect(motivoFechado("2026-10-22", regras, agora)).toBeNull();
-    expect(motivoFechado("2026-10-23", regras, agora)).toBe("sem-almoco");
+  it("terça: aberta até o prazo, a semana toda fecha depois", () => {
+    expect(motivoFechado("2026-10-28", regras, new Date("2026-10-27T12:00:00Z"))).toBeNull();
+    expect(motivoFechado("2026-10-28", regras, new Date("2026-10-27T12:00:01Z"))).toBe("encerrado");
+    expect(motivoFechado("2026-10-29", regras, new Date("2026-10-28T15:00:00Z"))).toBe("encerrado");
+  });
+  it("a semana seguinte abre normalmente depois que a atual fecha", () => {
+    expect(motivoFechado("2026-11-02", regras, new Date("2026-10-28T15:00:00Z"))).toBeNull();
   });
   it("sem configurações carregadas, não bloqueia (o banco decide)", () => {
     expect(motivoFechado("2026-10-01", undefined, agora)).toBeNull();
@@ -123,12 +129,12 @@ describe("relatório de refeições", () => {
 describe("semanaParaMarcar", () => {
   const regras = { prazo_limite: "09:00:00", dias_bloqueados: [] as string[] };
 
-  it("fica na semana atual enquanto houver dia aberto", () => {
-    const quartaCedo = new Date("2026-10-28T11:00:00Z");
-    expect(isoData(semanaParaMarcar(regras, quartaCedo))).toBe("2026-10-26");
+  it("fica na semana atual até o prazo de terça", () => {
+    const segunda = new Date("2026-10-26T14:00:00Z");
+    expect(isoData(semanaParaMarcar(regras, segunda))).toBe("2026-10-26");
   });
 
-  it("na sexta depois do prazo passa para a semana seguinte", () => {
+  it("depois do prazo de terça passa para a semana seguinte", () => {
     const sextaTarde = new Date("2026-10-30T16:00:00Z");
     expect(isoData(semanaParaMarcar(regras, sextaTarde))).toBe("2026-11-02");
   });
